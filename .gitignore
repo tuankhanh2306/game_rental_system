@@ -1,0 +1,36 @@
+# Thư mục vendor của Composer
+/vendor/
+
+# Các file môi trường
+.env
+
+# Các thư mục lưu trữ file sinh ra runtime
+/storage/logs/
+storage/sessions/
+storage/cache/
+
+# File backup, tạm, hoặc sensitive
+/public/uploads/temp/
+database/backup/
+
+# File hệ thống
+.DS_Store
+Thumbs.db
+
+# File IDE/editor
+.vscode/
+.idea/
+
+# File lock nếu không muốn commit
+composer.lock
+
+# Tệp PHP debug
+*.log
+*.bak
+*.tmp
+
+# PHPUnit test output
+.phpunit.result.cache
+
+# System logs
+*.log
