@@ -298,7 +298,7 @@
 
 
                 $stats = [
-                    'total' => 0,
+                    'total' => 0,      
                     'available' => 0,
                     'rented' => 0,
                     'maintenance' => 0
