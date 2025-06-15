@@ -1,0 +1,138 @@
+<?php
+namespace services;
+
+use core\JWTAuth;
+use models\User;
+use Exception;
+
+class AuthenticationService
+{
+    private $userModel;
+    private $jwtAuth;
+    private $jwtConfig;
+    
+    public function __construct($database)
+    {
+        $this->userModel = new User($database);
+        $this->jwtAuth = new JWTAuth($database);
+        
+        // Xử lý config JWT - kiểm tra file tồn tại
+        $configPath = __DIR__ . '/../config/jwt_config.php';
+        if (file_exists($configPath)) {
+            $this->jwtConfig = require $configPath;
+        } else {
+            // Fallback config nếu file không tồn tại
+            $this->jwtConfig = [
+                'secret' => 'default-secret-key-change-this-in-production',
+                'algorithm' => 'HS256',
+                'ttl' => [
+                    'access_token' => 3600, // 1 hour
+                    'refresh_token' => 86400 * 7, // 7 days
+                ],
+                'issuer' => 'game_rental_system',
+                'audience' => 'game_rental_users'
+            ];
+            
+            // Log warning
+            error_log("Warning: JWT config file not found at {$configPath}, using default config");
+        }
+    }
+    
+    public function register(array $data): array
+    {
+        // Validate dữ liệu
+        $errors = [];
+        if (empty($data['username']) || strlen($data['username']) < 3) {
+            $errors['username'] = 'Tên đăng nhập tối thiểu 3 ký tự';
+        }
+        if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Email không hợp lệ';
+        }
+        if (empty($data['password']) || strlen($data['password']) < 6) {
+            $errors['password'] = 'Mật khẩu tối thiểu 6 ký tự';
+        }
+        
+        if (!empty($errors)) {
+            return ['success' => false, 'errors' => $errors];
+        }
+        
+        // Kiểm tra tồn tại username/email
+        if ($this->userModel->userNameExists($data['username'])) {
+            return ['success' => false, 'errors' => ['username' => 'Tên đăng nhập đã tồn tại']];
+        }
+        if ($this->userModel->emailExists($data['email'])) {
+            return ['success' => false, 'errors' => ['email' => 'Email đã được sử dụng']];
+        }
+        
+        // Mã hóa mật khẩu và chuẩn bị dữ liệu
+        $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
+        $userData = [
+            'username'      => $data['username'],
+            'password_hash' => $passwordHash,
+            'email'         => $data['email'],
+            'full_name'     => $data['full_name'] ?? '',
+            'phone'         => $data['phone'] ?? '',
+            'role'          => $data['role'] ?? 'user',
+            'status'        => $data['status'] ?? 'active'
+        ];
+        
+        // Tạo user mới
+        try {
+            $userId = $this->userModel->create($userData);
+            return ['success' => true, 'user_id' => $userId, 'message' => 'Đăng ký thành công'];
+        } catch (Exception $e) {
+            error_log("Lỗi đăng ký: " . $e->getMessage());
+            return ['success' => false, 'errors' => ['exception' => $e->getMessage()]];
+        }
+    }
+    
+    public function login(string $identifier, string $password): array
+    {
+        try {
+            // 1. Lấy user theo username hoặc email
+            $user = $this->userModel->findByUsername($identifier) ?: $this->userModel->findByEmail($identifier);
+            
+            if (!$user) {
+                return ['success' => false, 'message' => 'Tên đăng nhập hoặc mật khẩu không đúng'];
+            }
+            
+            // 2. Kiểm tra mật khẩu
+            if (!password_verify($password, $user['password_hash'])) {
+                return ['success' => false, 'message' => 'Tên đăng nhập hoặc mật khẩu không đúng'];
+            }
+            
+            // 3. Kiểm tra trạng thái
+            if ($user['status'] !== 'active') {
+                return ['success' => false, 'message' => 'Tài khoản không hoạt động'];
+            }
+            
+            // 4. Tạo JWT token
+            $payload = [
+                'user_id' => $user['user_id'], // Sử dụng user_id từ database
+                'username' => $user['username'],
+                'email' => $user['email'],
+                'role' => $user['role']
+            ];
+            $token = $this->jwtAuth->generateToken($payload, 3600);
+            
+            return [
+                'success' => true,
+                'message' => 'Đăng nhập thành công',
+                'token' => $token,
+                'user' => [
+                    'id' => $user['user_id'], // Sử dụng user_id từ database
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'role' => $user['role'],
+                ],
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'expires_in' => $this->jwtConfig['ttl']['access_token'] ?? 3600
+            ];
+        } catch (Exception $e) {
+            error_log("Lỗi đăng nhập: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Đã xảy ra lỗi hệ thống'];
+        }
+    }
+}
+?>
