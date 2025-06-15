@@ -10,18 +10,30 @@
         exit();
     }
 
-    // Require tất cả các file cần thiết
+    spl_autoload_register(function ($className) {
+        // Chuyển đổi namespace thành đường dẫn file
+        $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
+        $file = __DIR__ . DIRECTORY_SEPARATOR . $className . '.php';
+        
+        if (file_exists($file)) {
+            require_once $file;
+        }
+    });
+
+    // Require tất cả các file cần thiếtư
+    require_once __DIR__ . '/controllers/GameController.php';
     require_once __DIR__ . '/controllers/AuthController.php';
-    require_once __DIR__ . '/controllers/UserController.php';  // THÊM DÒNG NÀY
+    require_once __DIR__ . '/controllers/UserController.php';  
     require_once __DIR__ . '/services/AuthenticationService.php';
-    require_once __DIR__ . '/services/UserService.php';        // THÊM DÒNG NÀY
+    require_once __DIR__ . '/services/UserService.php';       
     require_once __DIR__ . '/models/User.php';
+    require_once __DIR__ . '/models/Game.php';
     require_once __DIR__ . '/core/JWTAuth.php';
-    require_once __DIR__ . '/core/Database.php';               // THÊM DÒNG NÀY
+    require_once __DIR__ . '/core/Database.php';               
 
     use controllers\AuthController;
     use controllers\UserController;
-
+    use controllers\GameController;  
     try {
         // Kết nối DB - đúng cách
         $database = require __DIR__ . '/config/database.php';
@@ -63,7 +75,7 @@
                 }
                 break;
             
-            case '/api/users/profile':  // Thêm route API chuẩn
+            case '/users/profile':  // Thêm route API chuẩn
                 if ($method === 'GET') {
                     $userController = new UserController();  // UserController đã tự khởi tạo database
                     $userController->getProfile();
@@ -73,7 +85,7 @@
                 }
                 break;
                 
-            case '/api/users/updateProfile':  // PUT method
+            case '/users/updateProfile':  // PUT method
                 if ($method === 'PUT') {
                     $userController = new UserController();
                     $userController->updateProfile();
@@ -83,7 +95,7 @@
                 }
                 break;
                 
-            case '/api/users/change-password':
+            case '/users/change-password':
                 if ($method === 'POST') {
                     $userController = new UserController();
                     $userController->changePassword();
@@ -93,7 +105,7 @@
                 }
                 break;
                 
-            case '/api/users/refresh-token':
+            case '/users/refresh-token':
                 if ($method === 'POST') {
                     $userController = new UserController();
                     $userController->refreshToken();
@@ -103,7 +115,7 @@
                 }
                 break;
                 
-            case '/api/users/logout':
+            case '/users/logout':
                 if ($method === 'POST') {
                     $userController = new UserController();
                     $userController->logout();
@@ -112,10 +124,29 @@
                     echo json_encode(["success" => false, "message" => "Method not allowed"]);
                 }
                 break;
+            case '/game_consoles/index':
+                if ($method === 'GET') {
+                    $gameController = new GameController(); 
+                    $gameController->index();
+                    
+                } else {
+                    http_response_code(405);
+                    echo json_encode(["success" => false, "message" => "Method not allowed"]);
+                }
+                break;
+            case '/game_consoles/create':
+                if ($method === 'POST') {
+                    $gameController = new GameController();
+                    $gameController->create();
+                } else {
+                    http_response_code(405);
+                    echo json_encode(["success" => false, "message" => "Method not allowed"]);
+                }
+                break;
                 
             // Admin routes
             case '/users':
-            case '/api/users':
+            case '/users':
                 if ($method === 'GET') {
                     $userController = new UserController();
                     $userController->getUsers();
@@ -126,7 +157,7 @@
                 break;
                 
             case '/users/stats':
-            case '/api/users/stats':
+            case '/users/stats':
                 if ($method === 'GET') {
                     $userController = new UserController();
                     $userController->getUserStats();
@@ -137,8 +168,8 @@
                 break;
                 
             default:
-                // Xử lý dynamic routes với parameters (như /api/users/{id})
-                if (preg_match('/^\/api\/users\/(\d+)$/', $path, $matches)) {
+                // Xử lý dynamic routes với parameters (như  /users/{id})
+                if (preg_match('/^\ \/users\/(\d+)$/', $path, $matches)) {
                     $userId = $matches[1];
                     $userController = new UserController();
                     
@@ -160,13 +191,13 @@
                             "/register", 
                             "/login", 
                             "/users/getProfile",
-                            "/api/users/profile",
-                            "/api/users/change-password",
-                            "/api/users/refresh-token",
-                            "/api/users/logout",
-                            "/api/users (GET - admin)",
-                            "/api/users/stats (GET - admin)",
-                            "/api/users/{id} (PUT/DELETE - admin)"
+                            " /users/profile",
+                            " /users/change-password",
+                            " /users/refresh-token",
+                            " /users/logout",
+                            " /users (GET - admin)",
+                            " /users/stats (GET - admin)",
+                            " /users/{id} (PUT/DELETE - admin)"
                         ]
                     ]);
                 }

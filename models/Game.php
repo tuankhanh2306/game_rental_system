@@ -1,13 +1,14 @@
 <?php
-namespace models;
-use PDO;
+    namespace models;
+    use core\Database;
+    use PDO;
 
     class Game{
         private $db;
         private $table = 'game_consoles';
         
-        public function __construct($db){
-            $this->db = $db;
+        public function __construct(){
+            $this->db = Database::getInstance()->getConnection();
         }
 
         //Tạo máy chơi game mới

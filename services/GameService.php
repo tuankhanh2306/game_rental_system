@@ -1,11 +1,13 @@
 <?php
+// ===== FIXED GameService.php =====
     namespace services;
     use models\Game;
     use Exception;
+
     class GameService
     {
         private $gameModel;
-    
+
         public function __construct($db) 
         {
             $this->gameModel = new Game($db);
@@ -16,21 +18,22 @@
         {
             try {
                 $validationResult = $this->validateGameData($data);
-                if($validationResult['valid']){
-                        return [
+                // FIX: Sửa logic validation - nếu không valid thì return error
+                if(!$validationResult['success']){
+                    return [
                         'success' => false,
                         'message' => 'Dữ liệu không hợp lệ',
                         'errors' => $validationResult['errors']
                     ];
                 }
 
-                //chuẩn bị dữ liệu
+                // Chuẩn bị dữ liệu
                 $consoleData = [
                     'console_name' => trim($data['console_name']),
                     'console_type' => trim($data['console_type']),
                     'description' => trim($data['description'] ?? ''),
-                    'image_url' => trim($data['image'] ?? ''),
-                    'rental_price_per_hour' => floatval($data['rent_price']),
+                    'image_url' => trim($data['image_url'] ?? ''), // FIX: Sửa key từ 'image' thành 'image_url'
+                    'rental_price_per_hour' => floatval($data['rental_price_per_hour']), // FIX: Sửa key
                     'status' => trim($data['status']),
                 ];
 
@@ -39,7 +42,7 @@
                     return [
                         'success' => true,
                         'message' => 'Máy chơi game đã được tạo thành công.',
-                        'console_id' => $consoleId
+                        'data' => $consoleId // FIX: Trả về data thay vì console_id
                     ];
                 } else {
                     return [
@@ -48,37 +51,36 @@
                     ];
                 }
 
-
             } catch (Exception $e) {
                 error_log("Error creating game: " . $e->getMessage());
                 return ['success' => false, 'message' => 'Lỗi khi tạo máy chơi game: ' . $e->getMessage()];
             }
         }
 
-        
-        //lấy máy chơi game có phân trang
+        // Lấy máy chơi game có phân trang
         public function getConsoleList($param=[])
         {
             try {
-                $page = max(1, intval($param['page'] ?? 1)); // Đảm bảo trang bắt đầu từ 1
-                $limit = max(1, intval($param['limit'] ?? 12)); // Đảm bảo giới hạn lớn hơn 0
+                $page = max(1, intval($param['page'] ?? 1));
+                $limit = max(1, intval($param['limit'] ?? 12));
                 $type = $param['type'] ?? '';
                 $search = $param['search'] ?? '';
                 $availableOnly = $param['available_only'] ?? true;
 
-                //lấy dữ liệu máy chơi game
+                // Lấy dữ liệu máy chơi game
                 if($availableOnly){
                     $consoleData = $this->gameModel->getAvailable($page, $limit, $type, $search);
-                    $totalCount = $this->gameModel->count( $search, true);
+                    $totalCount = $this->gameModel->count($search, true);
                 }
                 else{
                     $consoleData = $this->gameModel->getAll($page, $limit, $type, $search);
                     $totalCount = $this->gameModel->count($search, false);
                 }
-                //xử lí dữ liệu máy chơi game
+                
+                // Xử lí dữ liệu máy chơi game
                 $processedConsoles = array_map([$this, 'processGameData'], $consoleData);
 
-                //tính toán phân trang
+                // Tính toán phân trang
                 $totalPages = ceil($totalCount / $limit);
 
                 return [
@@ -95,10 +97,7 @@
                     'message' => 'Danh sách máy chơi game đã được lấy thành công.'
                 ];
 
-
-
             } catch (Exception $e) {
-            
                 return [
                     'success' => false, 
                     'message' => 'Lỗi khi lấy danh sách máy chơi game: ' . $e->getMessage()
@@ -106,12 +105,10 @@
             }
         }
 
-        //lấy thông tin chi tiết mnay chơi game
+        // Lấy thông tin chi tiết máy chơi game
         public function getConsoleDetail($id)
         {
             try {
-
-
                 if(!is_numeric($id) || $id <= 0) {
                     return [
                         'success' => false,
@@ -123,13 +120,19 @@
                 if (!$console) {
                     return [
                         'success' => false,
-                        'message' => 'không tìm thấy máy chơi game.'
+                        'message' => 'Không tìm thấy máy chơi game.'
                     ];
                 }
-                //kiểm tra trạng thái máy chơi game
+                
+                // Kiểm tra trạng thái máy chơi game
                 $isRented = $this->gameModel->isCurrentlyRented($id);
                 $console['is_currently_rented'] = $isRented;
 
+                return [
+                    'success' => true,
+                    'data' => $this->processGameData($console),
+                    'message' => 'Lấy thông tin máy chơi game thành công.'
+                ];
                 
             } catch (Exception $e) {
                 return [
@@ -139,11 +142,11 @@
             }
         }
 
-        //câp nhật thông tin máy chơi game
+        // Cập nhật thông tin máy chơi game
         public function updateGame($id, $data)
         {
             try {
-                //kiểm tra id máy chơi game
+                // Kiểm tra id máy chơi game
                 if(!is_numeric($id) || $id <= 0) {
                     return [
                         'success' => false,
@@ -151,7 +154,7 @@
                     ];
                 }
 
-                //kiểm tra máy chơi game có tồn tại không
+                // Kiểm tra máy chơi game có tồn tại không
                 $console = $this->gameModel->findById($id);
                 if (!$console) {
                     return [
@@ -160,7 +163,7 @@
                     ];
                 }
 
-                //validate dữ liệu máy chơi game
+                // Validate dữ liệu máy chơi game
                 $validationResult = $this->validateGameData($data, false);
                 if(!$validationResult['success']) {
                     return [
@@ -170,21 +173,24 @@
                     ];
                 }
 
-                //chuẩn bị dữ liệu
-                $updateData=[];
+                // Chuẩn bị dữ liệu
+                $updateData = [];
                 $allowedFields = [
                     'console_name',
                     'console_type', 
                     'description', 
-                    'image', 
-                    'rent_price', 
+                    'image_url', // FIX: Sửa từ 'image' thành 'image_url'
+                    'rental_price_per_hour', // FIX: Sửa từ 'rent_price' thành 'rental_price_per_hour'
                     'status'
                 ];
+                
                 foreach ($allowedFields as $field) {
                     if (isset($data[$field])) {
-                        $updateData[$field] = floatval($data[$field]);
-                    }else {
-                        $updateData[$field] = trim($data($field)); // Giữ nguyên giá trị cũ nếu không có trong dữ liệu mới
+                        if ($field === 'rental_price_per_hour') {
+                            $updateData[$field] = floatval($data[$field]);
+                        } else {
+                            $updateData[$field] = trim($data[$field]); // FIX: Sửa lỗi syntax $data($field) thành $data[$field]
+                        }
                     }
                 }
 
@@ -202,7 +208,6 @@
                     ];
                 }
 
-
             } catch (Exception $e) {
                 error_log("Error updating game: " . $e->getMessage());
                 return [
@@ -212,11 +217,11 @@
             }
         }
 
-        //xóa máy chơi game
+        // Xóa máy chơi game
         public function deleteGame($id)
         {
             try {
-                //kiểm tra id máy chơi game
+                // Kiểm tra id máy chơi game
                 if(!is_numeric($id) || $id <= 0) {
                     return [
                         'success' => false,
@@ -224,7 +229,7 @@
                     ];
                 }
 
-                //kiểm tra máy chơi game có tồn tại không
+                // Kiểm tra máy chơi game có tồn tại không
                 $console = $this->gameModel->findById($id);
                 if (!$console) {
                     return [
@@ -240,7 +245,8 @@
                         'message' => 'Không thể xóa console đang được thuê'
                     ];
                 }
-                //xóa máy chơi game
+                
+                // Xóa máy chơi game
                 $result = $this->gameModel->delete($id);
                 if ($result) {
                     return [
@@ -262,12 +268,10 @@
             }
         }
 
-
-        //lấy các loại máy chơi game 
+        // Lấy các loại máy chơi game 
         public function getConsoleType(){
-
             try {
-                //lấy các loại máy chơi game
+                // Lấy các loại máy chơi game
                 $types = $this->gameModel->getUniqueTypes();
                 if (!$types) {
                     return [
@@ -288,25 +292,25 @@
             }
         }
 
-
-        //lấy thống kê máy chơi game
+        // Lấy thống kê máy chơi game
         public function getConsoleStats()
         {
             try {
-                //lấy thống kê máy chơi game
+                // Lấy thống kê máy chơi game
                 $statusStats = $this->gameModel->getStatusStats();
-
 
                 $stats = [
                     'total' => 0,      
                     'available' => 0,
                     'rented' => 0,
-                    'maintenance' => 0
+                    'maintenance' => 0,
+                    'status_breakdown' => []
                 ];
 
                 foreach ($statusStats as $status){
-                    $stats['total']+= $status['count'];
+                    $stats['total'] += $status['count'];
                     $stats['status_breakdown'][$status['status']] = $status['count'];
+                    
                     switch ($status['status']) {
                         case 'available':
                             $stats['available'] = $status['count'];
@@ -318,18 +322,10 @@
                             $stats['maintenance'] = $status['count'];
                             break;
                         default:
-                            // Trạng thái không xác định, có thể bỏ qua hoặc xử lý tùy ý
                             break;
                     }
                 }
-                
 
-                if (!$stats) {
-                    return [
-                        'success' => false,
-                        'message' => 'Không tìm thấy thống kê máy chơi game nào.'
-                    ];
-                }
                 return [
                     'success' => true,
                     'data' => $stats,
@@ -343,71 +339,62 @@
             }
         }
 
-        //validate dữ liệu máy chơi game
-        public function validateGameData($data, $reuired = true)
+        // Validate dữ liệu máy chơi game
+        public function validateGameData($data, $required = true) // FIX: Sửa typo 'reuired' thành 'required'
         {
-
             $errors = [];
+            
             // Kiểm tra tên máy chơi game
-            if ($reuired || isset($data['console_name'])) {
+            if ($required || isset($data['console_name'])) {
                 if (empty(trim($data['console_name'] ?? ''))) {
                     $errors[] = 'Tên máy chơi game không được để trống.';
                 } elseif (strlen($data['console_name']) < 3 || strlen($data['console_name']) > 50) {
                     $errors[] = 'Tên máy chơi game phải từ 3 đến 50 ký tự.';
                 }
-                
             } 
 
-            //kiểm tra loại máy chơi game
-            if ($reuired || isset($data['console_type'])) {
+            // Kiểm tra loại máy chơi game
+            if ($required || isset($data['console_type'])) {
                 if (empty(trim($data['console_type'] ?? ''))) {
                     $errors[] = 'Loại máy chơi game không được để trống.';
                 } 
             }
-            
 
-            // Kiểm tra thoii gian cho thuê
-            if ($reuired || isset($data['rent_time'])) {
-                if (empty(trim($data['rent_time'] ?? ''))) {
-                    $errors[] = 'Thời gian cho thuê không được để trống.';
-                } elseif (!is_numeric($data['rent_time']) || $data['rent_time'] <= 0) {
-                    $errors[] = 'Thời gian cho thuê phải là một số dương.';
-                }
-            }
-
-            //kiem tra giá tiền cho thuê
-            if ($reuired || isset($data['rent_price'])) {
-                if (empty(trim($data['rent_price'] ?? ''))) {
+            // FIX: Bỏ kiểm tra rent_time vì không có field này trong create
+            // Kiểm tra giá tiền cho thuê
+            if ($required || isset($data['rental_price_per_hour'])) {
+                if (empty(trim($data['rental_price_per_hour'] ?? ''))) {
                     $errors[] = 'Giá tiền cho thuê không được để trống.';
-                } elseif (!is_numeric($data['rent_price']) || $data['rent_price'] <= 0) {
+                } elseif (!is_numeric($data['rental_price_per_hour']) || $data['rental_price_per_hour'] <= 0) {
                     $errors[] = 'Giá tiền cho thuê phải là một số dương.';
                 }
             }
 
-            //kiểm tra trạng thái máy chơi game
-            if ($reuired || isset($data['status'])) {
+            // Kiểm tra trạng thái máy chơi game
+            if ($required || isset($data['status'])) {
                 if (empty(trim($data['status'] ?? ''))) {
                     $errors[] = 'Trạng thái máy chơi game không được để trống.';
-                } elseif (!in_array($data['status'], ['available', 'unavailable'])) {
+                } elseif (!in_array($data['status'], ['available', 'rented', 'maintenance'])) { // FIX: Thêm 'rented', 'maintenance'
                     $errors[] = 'Trạng thái máy chơi game không hợp lệ.';
                 }
             }
 
-            //kiểm tra đuong dẫn hình ảnh
-            if ($reuired || isset($data['image'])) {
-                if (empty(trim($data['image'] ?? ''))) {
-                    $errors[] = 'Đường dẫn hình ảnh không được để trống.';
-                } elseif (!filter_var($data['image'], FILTER_VALIDATE_URL)) {
-                    $errors[] = 'Đường dẫn hình ảnh không hợp lệ.';
+            // Kiểm tra đường dẫn hình ảnh
+            if ($required || isset($data['image_url'])) { // FIX: Sửa từ 'image' thành 'image_url'
+                if (!empty(trim($data['image_url'] ?? ''))) { // FIX: Cho phép để trống image_url
+                    if (!filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
+                        $errors[] = 'Đường dẫn hình ảnh không hợp lệ.';
+                    }
                 }
             }
+            
             return [
                 'success' => empty($errors),
                 'errors' => $errors
             ];
         }
 
-        //xử lí dữ liệu console trước khi trả về
+        // Xử lí dữ liệu console trước khi trả về
         public function processGameData($console)
         {
             if(!$console) {
@@ -430,7 +417,7 @@
             ];
         }
 
-        //lấy trạng thái máy chơi game
+        // Lấy trạng thái máy chơi game
         private function getStatusText($status) 
         {
             $statusTexts = [
@@ -439,8 +426,6 @@
                 'maintenance' => 'Bảo trì'
             ];
             
-            return $statusTexts[$status] ?? 'Không xác định';
         }
     }
-
 ?>
