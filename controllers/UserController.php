@@ -288,7 +288,7 @@ class UserController
      * Cập nhật thông tin người dùng (Admin only)
      * PUT /api/users/{id}
      */
-    public function updateUser($userId)
+    public function updateUser($userId )
     {
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {

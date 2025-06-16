@@ -34,6 +34,7 @@
         }
 
         //cập nhật thông tin người dùng
+        //cập nhật thông tin người dùng
         public function updateUser($userId, $data)
         {
             try {
@@ -58,7 +59,7 @@
 
                 // Kiểm tra tên đăng nhập: tìm các user khác (không phải user hiện tại) có username trùng
                 if (isset($data['username'])) {
-                    $sql = "SELECT id FROM users WHERE username = :username AND user_id != :current_user_id LIMIT 1";
+                    $sql = "SELECT user_id FROM users WHERE username = :username AND user_id != :current_user_id LIMIT 1";
                     $stmt = $this->userModel->getDatabase()->prepare($sql);
                     $stmt->bindParam(':username', $data['username']);
                     $stmt->bindParam(':current_user_id', $userId);
@@ -74,7 +75,7 @@
 
                 // Kiểm tra email: tìm các user khác (không phải user hiện tại) có email trùng
                 if (isset($data['email'])) {
-                    $sql = "SELECT id FROM users WHERE email = :email AND user_id != :current_user_id LIMIT 1";
+                    $sql = "SELECT user_id FROM users WHERE email = :email AND user_id != :current_user_id LIMIT 1";
                     $stmt = $this->userModel->getDatabase()->prepare($sql);
                     $stmt->bindParam(':email', $data['email']);
                     $stmt->bindParam(':current_user_id', $userId);
@@ -130,6 +131,7 @@
                 ];
             }
         }
+
 
 
 

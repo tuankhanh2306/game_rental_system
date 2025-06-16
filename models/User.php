@@ -181,26 +181,6 @@ class User
         return $stmt->execute();
     }
 
-
-    /**
-     * Kiểm tra username đã tồn tại hay chưa (loại trừ ID được chỉ định)
-     */
-    public function isUsernameExistsExcludeId($username, $excludeId)
-    {
-        $query = $this->db->prepare("SELECT COUNT(*) FROM users WHERE username = ? AND user_id != ?");
-        $query->execute([$username, $excludeId]);
-        return $query->fetchColumn() > 0;
-    }
-
-    /**
-     * Kiểm tra email đã tồn tại hay chưa (loại trừ ID được chỉ định)
-     */
-    public function isEmailExistsExcludeId($email, $excludeId)
-    {
-        $query = $this->db->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND user_id != ?");
-        $query->execute([$email, $excludeId]);
-        return $query->fetchColumn() > 0;
-    }
     
     //thống kê người dùng theo vai trò
     public function countByRole(){
