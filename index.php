@@ -75,7 +75,7 @@
                 }
                 break;
             
-            case '/users/profile':  // Thêm route API chuẩn
+            case '/users/profile':  
                 if ($method === 'GET') {
                     $userController = new UserController();  // UserController đã tự khởi tạo database
                     $userController->getProfile();
@@ -136,7 +136,6 @@
                 break;
             case '/game_consoles/create':
                 if ($method === 'POST') {
-                    $gameController = new GameController();
                     $gameController->create();
                 } else {
                     http_response_code(405);
