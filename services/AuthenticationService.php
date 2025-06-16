@@ -51,19 +51,28 @@ class AuthenticationService
         if (empty($data['password']) || strlen($data['password']) < 6) {
             $errors['password'] = 'Mật khẩu tối thiểu 6 ký tự';
         }
+        if (isset($data['full_name']) && strlen($data['full_name']) > 100) {
+            $errors['full_name'] = 'Họ tên không được quá 100 ký tự';
+        }
+        if (isset($data['phone']) && !preg_match('/^\+?[0-9]{10,15}$/', $data['phone'])) {
+            $errors['phone'] = 'Số điện thoại không hợp lệ';
+        }
+        //
         
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
         
-        // Kiểm tra tồn tại username/email
+        // Kiểm tra tồn tại username/email/phone
         if ($this->userModel->userNameExists($data['username'])) {
             return ['success' => false, 'errors' => ['username' => 'Tên đăng nhập đã tồn tại']];
         }
         if ($this->userModel->emailExists($data['email'])) {
             return ['success' => false, 'errors' => ['email' => 'Email đã được sử dụng']];
         }
-        
+        if (isset($data['phone']) && $this->userModel->phoneExists($data['phone'])) {
+            return ['success' => false, 'errors' => ['phone' => 'Số điện thoại đã được sử dụng']];
+        }
         // Mã hóa mật khẩu và chuẩn bị dữ liệu
         $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
         $userData = [

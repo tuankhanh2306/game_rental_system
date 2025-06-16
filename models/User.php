@@ -75,6 +75,14 @@ class User
         $stmt->execute();
         return $stmt->fetchColumn() > 0;
     }
+    //kiểm tra xem số điện thoại có tồn tại hay không
+    public function phoneExists($phone){
+        $sql = "SELECT COUNT(*) FROM " . $this->table . " WHERE phone = :phone";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':phone', $phone);
+        $stmt->execute();
+        return $stmt->fetchColumn() > 0;
+    }
     
     //cập nhật thông tin người dùng
     public function update($id, $data){
@@ -106,7 +114,7 @@ class User
     public function updatePassword($id, $passwordHash) {
         $sql = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE user_id = :id";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':user_id', $id);
         $stmt->bindParam(':password_hash', $passwordHash);
         return $stmt->execute();
     }
@@ -171,6 +179,27 @@ class User
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
         return $stmt->execute();
+    }
+
+
+    /**
+     * Kiểm tra username đã tồn tại hay chưa (loại trừ ID được chỉ định)
+     */
+    public function isUsernameExistsExcludeId($username, $excludeId)
+    {
+        $query = $this->db->prepare("SELECT COUNT(*) FROM users WHERE username = ? AND user_id != ?");
+        $query->execute([$username, $excludeId]);
+        return $query->fetchColumn() > 0;
+    }
+
+    /**
+     * Kiểm tra email đã tồn tại hay chưa (loại trừ ID được chỉ định)
+     */
+    public function isEmailExistsExcludeId($email, $excludeId)
+    {
+        $query = $this->db->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND user_id != ?");
+        $query->execute([$email, $excludeId]);
+        return $query->fetchColumn() > 0;
     }
     
     //thống kê người dùng theo vai trò

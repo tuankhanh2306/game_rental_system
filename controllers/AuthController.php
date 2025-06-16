@@ -1,16 +1,18 @@
 <?php
 namespace controllers;
 
+use core\Database;
 use services\AuthenticationService;
 use Exception;
 
 class AuthController
 {
     private $authService;
-
+    private $db;
     public function __construct($database = null)
     {
-        $this->authService = new AuthenticationService($database);
+        $this->db = $database ?? Database::getInstance();
+        $this->authService = new AuthenticationService($this->db);
     }
 
     public function register()

@@ -8,8 +8,8 @@
         private $gameService;
         private $db;
         
-        public function __construct(){
-            $this->db = Database::getInstance();
+        public function __construct($database = null){
+            $this->db = $database ?? Database::getInstance();
             $this->gameService = new GameService($this->db);
         }
         

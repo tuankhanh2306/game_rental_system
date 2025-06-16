@@ -34,9 +34,10 @@
         }
 
         //cập nhật thông tin người dùng
-        public function updateUser($userId,$data){
-            try{
-                //kieerm tra xem người dùng có tồn tại hay không
+        public function updateUser($userId, $data)
+        {
+            try {
+                // Kiểm tra xem người dùng có tồn tại hay không
                 $existingUser = $this->userModel->findById($userId);
                 if (!$existingUser) {
                     return [
@@ -44,7 +45,8 @@
                         'message' => 'Người dùng không tồn tại'
                     ];
                 }
-                //validate dữ liệu
+
+                // Validate dữ liệu
                 $validation = $this->validateUserData($data, $userId);
                 if (!$validation['valid']) {
                     return [
@@ -53,9 +55,16 @@
                         'error' => $validation['errors']
                     ];
                 }
-                //kiểm tra xem tên đăng nhập đã tồn tại hay chưa(nếu có thay đổi)
-                if (isset($data['username']) && $data['username'] !== $existingUser['username']) {
-                    if ($this->userModel->userNameExists($data['username'])) {
+
+                // Kiểm tra tên đăng nhập: tìm các user khác (không phải user hiện tại) có username trùng
+                if (isset($data['username'])) {
+                    $sql = "SELECT id FROM users WHERE username = :username AND user_id != :current_user_id LIMIT 1";
+                    $stmt = $this->userModel->getDatabase()->prepare($sql);
+                    $stmt->bindParam(':username', $data['username']);
+                    $stmt->bindParam(':current_user_id', $userId);
+                    $stmt->execute();
+                    
+                    if ($stmt->fetch()) {
                         return [
                             'success' => false,
                             'message' => 'Tên đăng nhập đã tồn tại'
@@ -63,20 +72,49 @@
                     }
                 }
 
-                //kliểm tra xem email đã tồn tại hay chưa(nếu có thay đổi)
-                if (isset($data['email']) && $data['email'] !== $existingUser['email']) {
-                    if ($this->userModel->findByEmail($data['email'])) {
+                // Kiểm tra email: tìm các user khác (không phải user hiện tại) có email trùng
+                if (isset($data['email'])) {
+                    $sql = "SELECT id FROM users WHERE email = :email AND user_id != :current_user_id LIMIT 1";
+                    $stmt = $this->userModel->getDatabase()->prepare($sql);
+                    $stmt->bindParam(':email', $data['email']);
+                    $stmt->bindParam(':current_user_id', $userId);
+                    $stmt->execute();
+                    
+                    if ($stmt->fetch()) {
                         return [
                             'success' => false,
                             'message' => 'Email đã được sử dụng'
                         ];
                     }
                 }
-                // caap nhật thông tin người dùng
-                if($this->userModel->update($userId, $data)){
+
+                // Cập nhật thông tin người dùng (chỉ cập nhật các trường có trong request)
+                $updateData = [];
+                
+                if (isset($data['username'])) {
+                    $updateData['username'] = $data['username'];
+                }
+                if (isset($data['email'])) {
+                    $updateData['email'] = $data['email'];
+                }
+                if (isset($data['full_name'])) {
+                    $updateData['full_name'] = $data['full_name'];
+                }
+                if (isset($data['phone'])) {
+                    $updateData['phone'] = $data['phone'];
+                }
+                if (isset($data['role'])) {
+                    $updateData['role'] = $data['role'];
+                }
+                if (isset($data['status'])) {
+                    $updateData['status'] = $data['status'];
+                }
+
+                // Thực hiện cập nhật
+                if ($this->userModel->update($userId, $updateData)) {
                     return [
                         'success' => true,
-                        'message' => 'Cập nhật thông tin người dùng thành công'
+                        'message' => 'Cập nhật thành công'
                     ];
                 } else {
                     return [
@@ -84,16 +122,18 @@
                         'message' => 'Cập nhật thông tin người dùng không thành công, vui lòng thử lại sau'
                     ];
                 }
-                
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return [
                     'success' => false,
-                    'message' => 'Đã xảy ra lỗi khi cập nhật thông tin người dùng',    
+                    'message' => 'Đã xảy ra lỗi khi cập nhật thông tin người dùng',
                     'error' => $e->getMessage()
                 ];
             }
         }
+
+
+
+
 
         //xóa mềm người dùng
         public function deleteUser($userId){
@@ -241,9 +281,10 @@
 
         // Hàm validate dữ liệu người dùng
 
-        private function validateUserData($data, $userId = null){
+        private function validateUserData($data, $userId = null)
+        {
             $errors = [];
-            
+
             // Validate username (chỉ khi có username trong data)
             if (isset($data['username'])) {
                 if (empty($data['username'])) {
@@ -253,6 +294,7 @@
                 } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $data['username'])) {
                     $errors['username'] = 'Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới';
                 }
+                // Không kiểm tra trùng lặp ở đây, sẽ kiểm tra sau khi biết có thay đổi hay không
             }
 
             // Validate email (chỉ khi có email trong data)
@@ -261,15 +303,8 @@
                     $errors['email'] = 'Email không được để trống';
                 } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
                     $errors['email'] = 'Email không hợp lệ';
-                } else {
-                    // Chỉ kiểm tra trùng lặp email khi:
-                    // - Đang tạo user mới (userId = null)
-                    // - Hoặc đang update user nhưng email khác với email hiện tại
-                    $existingUserWithEmail = $this->userModel->findByEmail($data['email']);
-                    if ($existingUserWithEmail && ($userId === null || $existingUserWithEmail['id'] != $userId)) {
-                        $errors['email'] = 'Email đã được sử dụng';
-                    }
                 }
+                // Không kiểm tra trùng lặp ở đây, sẽ kiểm tra sau khi biết có thay đổi hay không
             }
 
             // Validate password (chỉ bắt buộc khi tạo user mới)
@@ -287,26 +322,26 @@
             if (isset($data['full_name'])) {
                 if (empty($data['full_name'])) {
                     $errors['full_name'] = 'Họ và tên không được để trống';
-                } elseif (strlen($data['full_name']) < 3) {
-                    $errors['full_name'] = 'Họ và tên phải có ít nhất 3 ký tự';
+                } elseif (strlen($data['full_name']) < 2) {
+                    $errors['full_name'] = 'Họ và tên phải có ít nhất 2 ký tự';
                 }
             }
 
             // Validate phone (chỉ khi có trong data)
             if (isset($data['phone']) && !empty($data['phone']) && !preg_match('/^[0-9]{10,11}$/', $data['phone'])) {
-                $errors['phone'] = 'Số điện thoại không hợp lệ';
+                $errors['phone'] = 'Số điện thoại không hợp lệ (10-11 số)';
             }
 
             // Validate role
             $allowedRoles = ['admin', 'user', 'manager'];
             if (isset($data['role']) && !empty($data['role']) && !in_array($data['role'], $allowedRoles)) {
-                $errors['role'] = 'Vai trò không hợp lệ';
+                $errors['role'] = 'Vai trò không hợp lệ. Chỉ chấp nhận: ' . implode(', ', $allowedRoles);
             }
 
             // Validate status
             $allowedStatuses = ['active', 'inactive', 'banned'];
             if (isset($data['status']) && !empty($data['status']) && !in_array($data['status'], $allowedStatuses)) {
-                $errors['status'] = 'Trạng thái không hợp lệ';
+                $errors['status'] = 'Trạng thái không hợp lệ. Chỉ chấp nhận: ' . implode(', ', $allowedStatuses);
             }
 
             return [
@@ -314,5 +349,6 @@
                 'errors' => $errors
             ];
         }
+
     }
 ?>

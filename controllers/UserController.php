@@ -12,9 +12,9 @@ class UserController
     private $jwtAuth;
     private $db;
 
-    public function __construct()
+    public function __construct($database = null)
     {
-        $this->db = Database::getInstance()->getConnection();
+        $this->db = $database ?? Database::getInstance()->getConnection();
         $this->userService = new UserService($this->db);
         $this->jwtAuth = new JWTAuth();
     }
@@ -37,6 +37,39 @@ class UserController
 
             // Lấy thông tin user
             $result = $this->userService->getUserbyId($user['user_id']);
+            
+            if ($result['success']) {
+                $this->sendResponse(200, true, 'Lấy thông tin thành công', $result['user']);
+            } else {
+                $this->sendResponse(404, false, $result['message']);
+            }
+
+        } catch (Exception $e) {
+            $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
+        }
+    }
+
+    //lấy người dùng theo id
+    public function getUserById($userId)
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                $this->sendResponse(405, false, 'Method không được hỗ trợ');
+                return;
+            }
+
+            // Xác thực token
+            $user = $this->authenticateUser();
+            if (!$user) return;
+
+            // Chỉ admin mới có thể lấy thông tin người dùng khác
+            if ($user['role'] !== 'admin') {
+                $this->sendResponse(403, false, 'Không có quyền truy cập');
+                return;
+            }
+
+            // Lấy thông tin user
+            $result = $this->userService->getUserbyId($userId);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, 'Lấy thông tin thành công', $result['user']);
@@ -336,30 +369,7 @@ class UserController
         }
     }
 
-    /**
-     * Logout người dùng
-     * POST /api/users/logout
-     */
-    public function logout()
-    {
-        try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                $this->sendResponse(405, false, 'Method không được hỗ trợ');
-                return;
-            }
-
-            // Xác thực token
-            $user = $this->authenticateUser();
-            if (!$user) return;
-
-            // TODO: Thêm token vào blacklist nếu cần
-            
-            $this->sendResponse(200, true, 'Đăng xuất thành công');
-
-        } catch (Exception $e) {
-            $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
-        }
-    }
+    
 
     /**
      * Xác thực người dùng từ JWT token

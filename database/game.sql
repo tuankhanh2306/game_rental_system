@@ -24,6 +24,8 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+SELECT * from users;
+
 -- ===================================================================
 -- BẢNG 2: USER_SESSIONS - Quản lý phiên đăng nhập
 -- ===================================================================
@@ -93,6 +95,29 @@ CREATE TABLE system_settings (
     setting_value TEXT NOT NULL,
     description TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Kiểm tra cấu trúc bảng hiện tại
+DESCRIBE token_blacklist;
+
+-- Kiểm tra indexes
+SHOW INDEX FROM token_blacklist;
+
+-- Kiểm tra dữ liệu
+SELECT COUNT(*) as total_blacklisted_tokens FROM token_blacklist;
+SELECT COUNT(*) as expired_tokens FROM token_blacklist WHERE expires_at <= NOW();
+-- =================================================================
+-- BẢNG 7: TOKEN_BLACKLIST - Quản lý token bị blacklist (để logout)
+
+CREATE TABLE IF NOT EXISTS token_blacklist (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token_hash VARCHAR(255) NOT NULL UNIQUE,
+                user_id INT NOT NULL,
+                blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL,
+                INDEX idx_token_hash (token_hash),
+                INDEX idx_user_id (user_id),
+                INDEX idx_expires_at (expires_at)
 );
 
 -- ===================================================================
