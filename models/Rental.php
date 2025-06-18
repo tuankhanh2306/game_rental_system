@@ -154,6 +154,29 @@
             $stmt->execute();
             return $stmt->fetchColumn();
         }
+        //cập nhật đơn thuê
+        public function update($id, $data){
+            $field = [];
+            $params =[':id' => $id];
+            foreach ($data as $key => $value){
+                if($key !== 'rental_id'){
+                    $fields[] = "{$key} = :{$key}";
+                    $params[":{$key}"] = $value;
+                }
+            }
+
+            if(empty($fields)) return false;
+
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . ", 
+                    updated_at = NOW() WHERE rental_id = :id";
+            $stmt = $this->db->prepare($sql);
+            
+            foreach ($params as $key => $value){
+                $stmt -> blindParam($key, $value);
+            }
+
+            return $stmt->execute();
+        }
 
         // Cập nhật trạng thái đơn thuê
         public function updateStatus($id, $status, $notes = '')
@@ -193,6 +216,22 @@
             
             $stmt->execute();
             return $stmt->fetchColumn() > 0;
+        }
+
+         // Lấy các slot thời gian có sẵn cho console
+        public function getAvailableTimeSlots($consoleId, $date)
+        {
+            $sql = "SELECT rental_start, rental_end FROM {$this->table} 
+                    WHERE console_id = :console_id 
+                    AND DATE(rental_start) = :date
+                    AND status IN ('pending', 'confirmed', 'active')
+                    ORDER BY rental_start";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':console_id', $consoleId);
+            $stmt->bindParam(':date', $date);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         // Lấy thống kê đơn thuê theo trạng thái
@@ -235,7 +274,45 @@
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-    }
-
     
+
+        // Lấy đơn thuê đang hoạt động
+        public function getActiveRentals()
+        {
+            $sql = "SELECT r.*, u.username, u.full_name, gc.console_name
+                    FROM {$this->table} r
+                    JOIN users u ON r.user_id = u.user_id
+                    JOIN game_consoles gc ON r.console_id = gc.console_id
+                    WHERE r.status = 'active'
+                    AND r.rental_start <= NOW()
+                    AND r.rental_end >= NOW()
+                    ORDER BY r.rental_end ASC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Tự động cập nhật trạng thái đơn thuê hết hạn
+        public function updateExpiredRentals()
+        {
+            $sql = "UPDATE {$this->table} 
+                    SET status = 'completed', updated_at = NOW()
+                    WHERE status = 'active' 
+                    AND rental_end < NOW()";
+            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute();
+        }
+
+        // Xóa đơn thuê
+        public function delete($id)
+        {
+            $sql = "DELETE FROM {$this->table} WHERE rental_id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
+        }
+
+    }
 ?>

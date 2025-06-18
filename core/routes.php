@@ -57,6 +57,8 @@
     $router->put('/users/{id}', [UserController::class, 'updateUser']);
     $router->delete('/users/{id}', [UserController::class, 'deleteUser']);
 
+    //
+
     // Thực thi dispatch
     $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);
 ?>
