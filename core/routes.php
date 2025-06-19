@@ -23,6 +23,8 @@
     use controllers\AuthController;
     use controllers\GameController;
     use controllers\UserController;
+    use controllers\RentalController;
+    use controllers\RentalHistoryController;
     use middleware\TokenAuthMiddleware;
 
     $router = new Router();
@@ -49,6 +51,16 @@
     $router->get('/game_consoles/{id}', [GameController::class, 'show']);       // Lấy chi tiết
     $router->put('/game_consoles/{id}', [GameController::class, 'update']);     // Cập nhật
     $router->delete('/game_consoles/{id}', [GameController::class, 'delete']);  // Xóa
+
+    // ===== RENTAL ROUTES =====
+    $router->post('/rentals', [RentalController::class, 'create']);             // Tạo đơn thuê
+    $router->get('/rentals', [RentalController::class, 'index']);               // Lấy danh sách đơn thuê
+    $router->get('/rentals/stats', [RentalController::class, 'stats']);     // Thống kê đơn thuê
+
+    // =============RENTAL HISTORY ROUTES ==============
+    $router->get('/rental-history', [RentalHistoryController::class, 'index']);
+    $router->get('/rental-history/recent', [RentalHistoryController::class, 'recentActivity']);
+    $router->get('/rental-history/{rental_id}', [RentalHistoryController::class, 'showByRentalId']);
 
     // ===== ADMIN ONLY ROUTES =====
     // Routes chỉ dành cho admin
