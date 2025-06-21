@@ -1,5 +1,7 @@
 <?php
 
+    namespace models;
+    use PDO;
     // models/RentalHistory.php
     class RentalHistory
     {
@@ -18,11 +20,18 @@
                     VALUES (:rental_id, :action, :action_by, :action_date, :notes)";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':rental_id', $data['rental_id']);
-            $stmt->bindParam(':action', $data['action']);
-            $stmt->bindParam(':action_by', $data['action_by']);
-            $stmt->bindParam(':action_date', $data['action_date'] ?? date('Y-m-d H:i:s'));
-            $stmt->bindParam(':notes', $data['notes'] ?? '');
+
+            $rental_id = $data['rental_id'];
+            $action = $data['action'];
+            $action_by = $data['action_by'];
+            $notes = $data['notes'];
+            $action_date = $data['action_date'];
+            
+            $stmt->bindParam(':rental_id', $rental_id);
+            $stmt->bindParam(':action', $action);
+            $stmt->bindParam(':action_by', $action_by);
+            $stmt->bindParam(':notes', $notes);
+            $stmt->bindParam(':action_date', $action_date);
 
             if ($stmt->execute()) {
                 return $this->db->lastInsertId();

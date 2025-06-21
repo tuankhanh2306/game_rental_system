@@ -2,6 +2,7 @@
 namespace services;
 
 use models\Rental;
+use models\RentalHistory;
 use Exception;
 
 class RentalService
@@ -18,13 +19,44 @@ class RentalService
     public function createRental($data)
     {
         try {
-            $rentalId = $this->rentalModel->create($data);
-            return $rentalId 
-                ? ['success' => true, 'data' => $rentalId]
-                : ['success' => false, 'message' => 'Không thể tạo đơn thuê'];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+        // Tính số giờ thuê
+        $start = new \DateTime($data['rental_start']);
+        $end = new \DateTime($data['rental_end']);
+        $diff = $start->diff($end);
+
+        // Tổng giờ thuê
+        $total_hours = max(1, ($diff->days * 24) + $diff->h + round($diff->i / 60));
+
+        // Lấy giá thuê mỗi giờ
+        $stmt = $this->db->prepare("SELECT rental_price_per_hour FROM game_consoles WHERE console_id = :console_id");
+        $stmt->execute([':console_id' => $data['console_id']]);
+        $price_per_hour = $stmt->fetchColumn();
+
+        if (!$price_per_hour) {
+            return ['success' => false, 'message' => 'Không tìm thấy giá thuê cho console'];
         }
+
+        // Tính tổng tiền
+        $total_amount = $total_hours * $price_per_hour;
+
+        //  Gán lại vào $data
+        $data['total_hours'] = $total_hours;
+        $data['total_amount'] = $total_amount;
+        $data['status'] = $data['status'] ?? 'pending';
+        $data['notes'] = $data['notes'] ?? '';
+
+        $rentalId = $this->rentalModel->create($data);
+
+        return $rentalId
+            ? ['success' => true, 'data' => [
+                'rental_id' => $rentalId,
+                'total_hours' => $total_hours,
+                'total_amount' => $total_amount
+            ]]
+            : ['success' => false, 'message' => 'Không thể tạo đơn thuê'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+    }
     }
 
     public function getAllRentals($filters = [])
@@ -55,7 +87,7 @@ class RentalService
             try {
                 $rental = $this->rentalModel->findById($id);
                 return $rental 
-                    ? ['success' => true, 'data' => $rental]
+                    ? ['success' => true, 'data' => $rental, 'message' => 'Lấy đơn thuê thành công']
                     : ['success' => false, 'message' => 'Không tìm thấy đơn thuê'];
             } catch (Exception $e) {
                 return ['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()];
@@ -69,11 +101,11 @@ class RentalService
 
             if ($success) {
                 // Ghi lịch sử
-                $historyModel = new \models\RentalHistory($this->db); // hoặc `use models\RentalHistory` ở đầu file
+                $historyModel = new RentalHistory($this->db);
                 $historyModel->create([
                     'rental_id' => $id,
                     'action' => 'status_updated',
-                    'action_by' => $_SESSION['user_id'] ?? 0,
+                    'action_by' => $_SESSION['user_id'] ?? null,
                     'notes' => $notes,
                     'action_date' => date('Y-m-d H:i:s'),
                 ]);
@@ -107,6 +139,22 @@ class RentalService
             return ['success' => false, 'message' => 'Lỗi thống kê: ' . $e->getMessage()];
         }
     }
+
+    public function getStatusStats()
+{
+    try {
+        return [
+            'success' => true,
+            'data' => $this->rentalModel->getStatusStats()
+        ];
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'message' => 'Lỗi thống kê: ' . $e->getMessage()
+        ];
+    }
+}
+
 
     public function getUpcomingRentals($hours = 24)
     {

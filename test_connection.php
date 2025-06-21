@@ -3,6 +3,7 @@
  * Test Database Connection
  * Chạy file này để kiểm tra kết nối
  */
+    require_once __DIR__ . '/vendor/autoload.php';
 
     use core\Database;
 

@@ -5,6 +5,7 @@
      */
 
     // Load environment variables
+    if (!function_exists('loadEnv')) {
     function loadEnv($file) {
         if (!file_exists($file)) return;
         
@@ -14,22 +15,22 @@
                 list($key, $value) = explode('=', $line, 2);
                 $_ENV[trim($key)] = trim($value);
             }
-        }
+        }}
     }
 
     // Load .env file
     loadEnv(__DIR__ . '/../.env');
 
     // Database constants
-    define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
-    define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
-    define('DB_NAME', $_ENV['DB_NAME'] ?? 'game_rental_system');
-    define('DB_USER', $_ENV['DB_USER'] ?? 'root');
-    define('DB_PASS', $_ENV['DB_PASS'] ?? '');
-    define('DB_CHARSET', 'utf8mb4');
+    if (!defined('DB_HOST')) define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', $_ENV['DB_NAME'] ?? 'game_rental_system');
+    if (!defined('DB_PORT')) define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
+    if (!defined('DB_PASS')) define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+    if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
+    if (!defined('DB_USER')) define('DB_USER', $_ENV['DB_USER'] ?? 'root');
 
     // DSN cho PDO
-    define('DB_DSN', 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET);
+    if (!defined('DB_DSN')) define('DB_DSN', 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET);
 
     // Tạo và trả về PDO connection
     try {

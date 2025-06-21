@@ -27,12 +27,16 @@ require_once __DIR__ . '/services/AuthenticationService.php';
 require_once __DIR__ . '/services/UserService.php';
 require_once __DIR__ . '/models/User.php';
 require_once __DIR__ . '/models/Game.php';
+require_once __DIR__ . '/controllers/RentalController.php';
+require_once __DIR__ . '/controllers/RentalHistoryController.php';
 require_once __DIR__ . '/core/JWTAuth.php';
 require_once __DIR__ . '/core/Database.php';
 
 use controllers\AuthController;
 use controllers\UserController;
 use controllers\GameController;
+use controllers\RentalController;
+use controllers\RentalHistoryController;
 
 try {
     // Database connection
@@ -112,7 +116,49 @@ try {
             $controller->create();
             break;
 
-        // Dynamic routes with regex
+        // Rentals routes
+        case ($path === '/rentals' && $method === 'POST'):
+            $controller = new RentalController($database);
+            $controller->create();
+            break;
+
+        case ($path === '/rentals' && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->index();
+            break;
+
+        case ($path === '/rentals/stats' && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->stats();
+            break;
+
+        case (preg_match('/^\/rentals\/(\d+)$/', $path, $matches) && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->show($matches[1]);
+            break;
+
+        case ($path === '/rentals/update-status' && $method === 'PUT'):
+            $controller = new RentalController($database);
+            $controller->updateStatus();
+            break;
+
+        case ($path === '/rentals/upcoming' && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->upcoming();
+            break;
+        // Route: GET /rentals/stats/status
+        case ($path === '/rentals/stats/status' && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->getStatusStats();
+            break;
+
+        // Route: GET /rentals/stats/monthly
+        case ($path === '/rentals/stats/monthly' && $method === 'GET'):
+            $controller = new RentalController($database);
+            $controller->getMonthlyRevenue();
+            break;
+
+       // Dynamic routes with regex
         case (preg_match('/^\/users\/(\d+)$/', $path, $matches) === 1):
             $userId = $matches[1];
             $controller = new UserController($database);

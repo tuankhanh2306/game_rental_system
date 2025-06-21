@@ -107,7 +107,7 @@ class RentalController
             }
 
             $result = $this->rentalService->getRentalById($id);
-            $this->sendResponse($result['success'] ? 200 : 404, $result['success'], $result['message'], $result['data'] ?? null);
+            $this->sendResponse($result['success'] ? 200 : 404, $result['success'], $result['message'], $result['data'] ?? '');
         } catch (Exception $e) {
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
@@ -135,6 +135,30 @@ class RentalController
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
     }
+
+    // Lấy thống kê theo trạng thái đơn thuê
+    public function getStatusStats()
+    {
+        try {
+            $stats = $this->rentalService->getStatusStats();
+            $this->sendResponse(200, true, 'Thống kê trạng thái thành công', $stats);
+        } catch (Exception $e) {
+            $this->sendResponse(500, false, 'Lỗi thống kê: ' . $e->getMessage());
+        }
+    }
+
+    // Lấy thống kê doanh thu theo tháng
+    public function getMonthlyRevenue()
+    {
+        try {
+            $year = $_GET['year'] ?? date('Y');
+            $data = $this->rentalService->getMonthlyRevenue($year);
+            $this->sendResponse(200, true, 'Thống kê doanh thu thành công', $data);
+        } catch (Exception $e) {
+            $this->sendResponse(500, false, 'Lỗi thống kê: ' . $e->getMessage());
+        }
+    }
+
 
     // Đơn thuê sắp hết hạn (GET /rentals/upcoming?hours=24)
     public function upcoming()

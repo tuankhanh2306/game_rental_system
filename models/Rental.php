@@ -18,14 +18,25 @@
                     VALUES (:user_id, :console_id, :rental_start, :rental_end, :total_hours, :total_amount, :status, :notes)";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':user_id', $data['user_id']);
-            $stmt->bindParam(':console_id', $data['console_id']);
-            $stmt->bindParam(':rental_start', $data['rental_start']);
-            $stmt->bindParam(':rental_end', $data['rental_end']);
-            $stmt->bindParam(':total_hours', $data['total_hours']);
-            $stmt->bindParam(':total_amount', $data['total_amount']);
-            $stmt->bindParam(':status', $data['status'] ?? 'pending');
-            $stmt->bindParam(':notes', $data['notes'] ?? '');
+
+             // Tách giá trị ra biến
+            $user_id = $data['user_id'];
+            $console_id = $data['console_id'];
+            $rental_start = $data['rental_start'];
+            $rental_end = $data['rental_end'];
+            $total_hours = $data['total_hours'];
+            $total_amount = $data['total_amount'];
+            $status = $data['status'] ?? 'pending';
+            $notes = $data['notes'] ?? '';
+
+            $stmt->bindParam(':user_id', $user_id);
+            $stmt->bindParam(':console_id', $console_id);
+            $stmt->bindParam(':rental_start', $rental_start);
+            $stmt->bindParam(':rental_end', $rental_end);
+            $stmt->bindParam(':total_hours', $total_hours);
+            $stmt->bindParam(':total_amount', $total_amount);
+            $stmt->bindParam(':status', $status);
+            $stmt->bindParam(':notes', $notes);
 
             if ($stmt->execute()) {
                 return $this->db->lastInsertId();

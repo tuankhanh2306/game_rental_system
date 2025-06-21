@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /game_rental_system/
+
+# Nếu file hoặc thư mục không tồn tại thì chuyển về index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

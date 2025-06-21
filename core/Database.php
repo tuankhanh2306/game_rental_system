@@ -1,6 +1,9 @@
 <?php
 
     namespace core;
+
+    require_once __DIR__ . '/../config/database.php';
+
     use PDO;
     use PDOException;
     use Exception;
