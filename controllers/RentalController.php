@@ -113,28 +113,31 @@ class RentalController
         }
     }
 
-    // Cập nhật trạng thái đơn thuê
-    public function updateStatus()
-    {
-        try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
-                $this->sendResponse(405, false, 'Method không được hỗ trợ');
-                return;
-            }
-
-            $data = json_decode(file_get_contents('php://input'), true);
-            if (empty($data['rental_id']) || empty($data['status'])) {
-                $this->sendResponse(400, false, 'Thiếu rental_id hoặc status');
-                return;
-            }
-
-            $notes = $data['notes'] ?? '';
-            $result = $this->rentalService->updateStatus($data['rental_id'], $data['status'], $notes);
-            $this->sendResponse($result['success'] ? 200 : 400, $result['success'], $result['message']);
-        } catch (Exception $e) {
-            $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
+    // Cập nhật trạng thái đơn thuê (PUT /rentals/{id}/status)
+public function updateStatus($id)
+{
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+            $this->sendResponse(405, false, 'Method không được hỗ trợ');
+            return;
         }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($data['status'])) {
+            $this->sendResponse(400, false, 'Thiếu trường status');
+            return;
+        }
+
+        $notes = $data['notes'] ?? '';
+        $result = $this->rentalService->updateStatus($id, $data['status'], $notes);
+
+        $this->sendResponse($result['success'] ? 200 : 400, $result['success'], $result['message']);
+    } catch (Exception $e) {
+        $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
     }
+}
+
 
     // Lấy thống kê theo trạng thái đơn thuê
     public function getStatusStats()
@@ -162,20 +165,26 @@ class RentalController
 
     // Đơn thuê sắp hết hạn (GET /rentals/upcoming?hours=24)
     public function upcoming()
-    {
-        try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-                $this->sendResponse(405, false, 'Method không được hỗ trợ');
-                return;
-            }
-
-            $hours = $_GET['hours'] ?? 24;
-            $result = $this->rentalService->getUpcomingRentals($hours);
-            $this->sendResponse(200, true, 'Lấy danh sách thành công', $result['data']);
-        } catch (Exception $e) {
-            $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
+{
+    try {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->sendResponse(405, false, 'Method không được hỗ trợ');
+            return;
         }
+
+        $hours = $_GET['hours'] ?? 24;
+        $result = $this->rentalService->getUpcomingRentals($hours);
+
+        if ($result['success']) {
+            $this->sendResponse(200, true, 'Lấy danh sách thành công', $result['data']);
+        } else {
+            $this->sendResponse(500, false, $result['message']);
+        }
+    } catch (Exception $e) {
+        $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
     }
+}
+
 
 
     // Gửi phản hồi JSON

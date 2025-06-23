@@ -24,7 +24,16 @@ class RentalHistoryController
                 return;
             }
 
-            $result = $this->historyService->getAll();
+            // Lấy các tham số lọc từ query string
+        $filters = [
+            'action' => $_GET['action'] ?? null,
+            'action_by' => $_GET['action_by'] ?? null,
+            'from_date' => $_GET['from_date'] ?? null,
+            'to_date' => $_GET['to_date'] ?? null,
+        ];
+
+
+            $result = $this->historyService->getAll($filters);
             $this->sendResponse(200, true, 'Lấy lịch sử thành công', $result);
         } catch (Exception $e) {
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());

@@ -56,11 +56,14 @@
     $router->post('/rentals', [RentalController::class, 'create']);             // Tạo đơn thuê
     $router->get('/rentals', [RentalController::class, 'index']);               // Lấy danh sách đơn thuê
     $router->get('/rentals/stats', [RentalController::class, 'stats']);     // Thống kê đơn thuê
+    $router->get('/rentals/{id}', [RentalController::class, 'show']);                // Lấy chi tiết đơn thuê theo ID
+    $router->put('/rentals/{id}/update-status', [RentalController::class, 'updateStatus']); // Cập nhật trạng thái đơn thuê
+    $router->get('/rentals/upcoming', [RentalController::class, 'upcoming']);        // Đơn thuê sắp hết hạn
 
     // =============RENTAL HISTORY ROUTES ==============
-    $router->get('/rental-history', [RentalHistoryController::class, 'index']);
-    $router->get('/rental-history/recent', [RentalHistoryController::class, 'recentActivity']);
-    $router->get('/rental-history/{rental_id}', [RentalHistoryController::class, 'showByRentalId']);
+    $router->get('/rental-history', [RentalHistoryController::class, 'index']); // Lấy toàn bộ lịch sử đơn thuê
+    $router->get('/rental-history/recent', [RentalHistoryController::class, 'recentActivity']); // Lấy hoạt động gần đây
+    $router->get('/rental-history/{rental_id}', [RentalHistoryController::class, 'showByRentalId']); // Lấy lịch sử theo rental_id
 
     // ===== ADMIN ONLY ROUTES =====
     // Routes chỉ dành cho admin

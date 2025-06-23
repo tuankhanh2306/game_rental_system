@@ -155,6 +155,24 @@ class RentalService
     }
 }
 
+public function getMonthlyRevenue()
+{
+    try {
+        $year = date('Y');
+        return [
+            'success' => true,
+            'message' => 'Thống kê doanh thu theo tháng thành công',
+            'data' => $this->rentalModel->getMonthlyRevenue($year)
+        ];
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'message' => 'Lỗi thống kê doanh thu: ' . $e->getMessage()
+        ];
+    }
+}
+
+
 
     public function getUpcomingRentals($hours = 24)
     {

@@ -137,9 +137,9 @@ try {
             $controller->show($matches[1]);
             break;
 
-        case ($path === '/rentals/update-status' && $method === 'PUT'):
+        case (preg_match('/^\/rentals\/(\d+)\/update-status$/', $path, $matches) && $method === 'PUT'):
             $controller = new RentalController($database);
-            $controller->updateStatus();
+            $controller->updateStatus($matches[1]);
             break;
 
         case ($path === '/rentals/upcoming' && $method === 'GET'):
@@ -157,6 +157,27 @@ try {
             $controller = new RentalController($database);
             $controller->getMonthlyRevenue();
             break;
+
+// Rental History Routes
+
+// GET /rental-history -> lấy toàn bộ lịch sử
+        case ($path === '/rental-history' && $method === 'GET'):
+            $controller = new RentalHistoryController($database);
+            $controller->index();
+            break;
+
+// GET /rental-history/recent -> lấy hoạt động gần đây
+        case ($path === '/rental-history/recent' && $method === 'GET'):
+            $controller = new RentalHistoryController($database);
+            $controller->recentActivity();
+            break;
+
+// GET /rental-history/{rental_id} -> lấy lịch sử theo rental_id
+        case (preg_match('/^\/rental-history\/(\d+)$/', $path, $matches) && $method === 'GET'):
+            $controller = new RentalHistoryController($database);
+            $controller->showByRentalId($matches[1]);
+            break;
+
 
        // Dynamic routes with regex
         case (preg_match('/^\/users\/(\d+)$/', $path, $matches) === 1):

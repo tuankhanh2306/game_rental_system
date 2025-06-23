@@ -1,6 +1,7 @@
 <?php
     namespace models;
     use PDO;
+    use DateTime;
     class Rental
     {
         private $db;
@@ -233,16 +234,18 @@
         // Lấy đơn thuê sắp hết hạn
         public function getUpcomingRentals($hours = 24)
         {
+            $toTime = (new DateTime())->modify("+$hours hours")->format('Y-m-d H:i:s');
+
             $sql = "SELECT r.*, u.username, u.full_name, u.phone, gc.console_name
-                    FROM {$this->table} r
-                    JOIN users u ON r.user_id = u.user_id
-                    JOIN game_consoles gc ON r.console_id = gc.console_id
-                    WHERE r.status = 'active'
-                    AND r.rental_end BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL :hours HOUR)
-                    ORDER BY r.rental_end ASC";
-            
+                FROM {$this->table} r
+                JOIN users u ON r.user_id = u.user_id
+                JOIN game_consoles gc ON r.console_id = gc.console_id
+                WHERE r.status = 'confirmed'
+                AND r.rental_end BETWEEN NOW() AND :to_time
+                ORDER BY r.rental_end ASC";
+
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':hours', $hours);
+            $stmt->bindParam(':to_time', $toTime);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
