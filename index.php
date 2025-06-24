@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 spl_autoload_register(function ($className) {
     $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
     $file = __DIR__ . DIRECTORY_SEPARATOR . $className . '.php';
-    
+        
     if (file_exists($file)) {
         require_once $file;
     }
@@ -41,14 +41,14 @@ use controllers\RentalHistoryController;
 try {
     // Database connection
     $database = require __DIR__ . '/config/database.php';
-    
+        
     // Routing
     $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     $method = $_SERVER['REQUEST_METHOD'];
-    
+        
     // Remove base path if exists
     $path = str_replace('/game_rental_system', '', $uri);
-    
+        
     error_log("Request URI: " . $uri);
     error_log("Request Method: " . $method);
     error_log("Processed Path: " . $path);
@@ -67,7 +67,7 @@ try {
             $controller = new AuthController($database);
             $controller->register();
             break;
-            
+                    
         case ($path === '/login' && $method === 'POST'):
             $controller = new AuthController($database);
             $controller->login();
@@ -78,44 +78,84 @@ try {
             $controller = new UserController($database);
             $controller->getProfile();
             break;
-            
+                    
         case ($path === '/users/updateProfile' && $method === 'PUT'):
             $controller = new UserController($database);
             $controller->updateProfile();
             break;
-            
+                    
         case ($path === '/users/change-password' && $method === 'POST'):
             $controller = new UserController($database);
             $controller->changePassword();
             break;
-            
+                    
         case ($path === '/users/refresh-token' && $method === 'POST'):
             $controller = new UserController($database);
             $controller->refreshToken();
             break;
-            
+                    
         // Admin user management routes
         case ($path === '/users' && $method === 'GET'):
             $controller = new UserController($database);
             $controller->getUsers();
             break;
-            
+                    
         case ($path === '/users/stats' && $method === 'GET'):
             $controller = new UserController($database);
             $controller->getUserStats();
             break;
+        // Dynamic routes with regex
+        case (preg_match('/^\/users\/(\d+)$/', $path, $matches) === 1):
+            $userId = $matches[1];
+            $controller = new UserController($database);
+                        
+            switch ($method) {
+                case 'GET':
+                    $controller->getUserById($userId);
+                    break;
+                case 'PUT':
+                    $controller->updateUser($userId);
+                    break;
+                case 'DELETE':
+                    $controller->deleteUser($userId);
+                    break;
+                default:
+                    sendErrorResponse(405, "Method not allowed");
+            }
+            break;
+           
 
-        // Game console routes
-        case (($path === '/game-consoles' || $path === '/game_consoles') && $method === 'GET'):
+        // Game console routes 
+        case (( $path === '/gameConsoles/index') && $method === 'GET'):
             $controller = new GameController($database);
             $controller->index();
             break;
-            
-        case (($path === '/game-consoles' || $path === '/game_consoles') && $method === 'POST'):
+                    
+        case (( $path === '/gameConsoles/create') && $method === 'POST'):
             $controller = new GameController($database);
             $controller->create();
             break;
 
+        case (preg_match('/^\/gameConsoles\/(\d+)$/', $path, $matches) === 1):
+            $consoleId = $matches[1];
+            $controller = new GameController($database);
+                        
+            switch ($method) {
+                case 'GET':
+                    $controller->show($consoleId);
+                    break;
+                case 'PUT':
+                    $controller->update($consoleId);
+                    break;
+                case 'DELETE':
+                    $controller->delete($consoleId);
+                    break;
+                default:
+                    sendErrorResponse(405, "Method not allowed");
+            }
+            break;
+
+            
         // Rentals routes
         case ($path === '/rentals' && $method === 'POST'):
             $controller = new RentalController($database);
@@ -146,6 +186,7 @@ try {
             $controller = new RentalController($database);
             $controller->upcoming();
             break;
+
         // Route: GET /rentals/stats/status
         case ($path === '/rentals/stats/status' && $method === 'GET'):
             $controller = new RentalController($database);
@@ -158,67 +199,25 @@ try {
             $controller->getMonthlyRevenue();
             break;
 
-// Rental History Routes
-
-// GET /rental-history -> lấy toàn bộ lịch sử
+        // Rental History Routes
         case ($path === '/rental-history' && $method === 'GET'):
             $controller = new RentalHistoryController($database);
             $controller->index();
             break;
 
-// GET /rental-history/recent -> lấy hoạt động gần đây
         case ($path === '/rental-history/recent' && $method === 'GET'):
             $controller = new RentalHistoryController($database);
             $controller->recentActivity();
             break;
 
-// GET /rental-history/{rental_id} -> lấy lịch sử theo rental_id
         case (preg_match('/^\/rental-history\/(\d+)$/', $path, $matches) && $method === 'GET'):
             $controller = new RentalHistoryController($database);
             $controller->showByRentalId($matches[1]);
             break;
 
-
-       // Dynamic routes with regex
-        case (preg_match('/^\/users\/(\d+)$/', $path, $matches) === 1):
-            $userId = $matches[1];
-            $controller = new UserController($database);
-            
-            switch ($method) {
-                case 'GET':
-                    $controller->getUserById($userId);
-                    break;
-                case 'PUT':
-                    $controller->updateUser($userId);
-                    break;
-                case 'DELETE':
-                    $controller->deleteUser($userId);
-                    break;
-                default:
-                    sendErrorResponse(405, "Method not allowed");
-            }
-            break;
-            
-        case (preg_match('/^\/game[-_]consoles\/(\d+)$/', $path, $matches) === 1):
-            $consoleId = $matches[1];
-            $controller = new GameController($database);
-            
-            switch ($method) {
-                case 'GET':
-                    $controller->show($consoleId);
-                    break;
-                case 'PUT':
-                    $controller->update($consoleId);
-                    break;
-                case 'DELETE':
-                    $controller->delete($consoleId);
-                    break;
-                default:
-                    sendErrorResponse(405, "Method not allowed");
-            }
-            break;
-
-        // 404 - Route not found
+                 
+        
+        
         default:
             http_response_code(404);
             echo json_encode([
@@ -236,17 +235,22 @@ try {
                     "GET /users (admin)",
                     "GET /users/stats (admin)",
                     "GET|PUT|DELETE /users/{id} (admin)",
-                    "GET|POST /game-consoles",
-                    "GET|PUT|DELETE /game-consoles/{id}"
+                    "GET /gameConsoles/index",
+                    "POST /gameConsoles/create",
+                    "GET|PUT|DELETE /gameConsoles/{id}",
+                    "GET|POST /rentals",
+                    "GET /rentals/stats",
+                    "GET /rentals/upcoming",
+                    "GET /rental-history",
+                    "GET /rental-history/recent"
                 ]
             ]);
             break;
     }
-
 } catch (Exception $e) {
     error_log("Error in index.php: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
-    
+        
     http_response_code(500);
     echo json_encode([
         "success" => false,

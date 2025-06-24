@@ -63,12 +63,21 @@ class RentalController
             $filters = [
                 'status' => $_GET['status'] ?? null,
                 'user_id' => $_GET['user_id'] ?? null,
-                'console_id' => $_GET['console_id'] ?? null
+                'console_id' => $_GET['console_id'] ?? null,
+                'search' => $_GET['search'] ?? null,
+                'page' => $_GET['page'] ?? 1,
+                'limit' => $_GET['limit'] ?? 10
             ];
 
+            // Loại bỏ các giá trị null hoặc rỗng
+            $filters = array_filter($filters, function($value) {
+                return $value !== null && $value !== '';
+            });
+
             $result = $this->rentalService->getAllRentals($filters);
+            
             if ($result['success']) {
-                $this->sendResponse(200, true, 'Lấy danh sách đơn thuê thành công', $result['data']);
+                $this->sendResponse(200, true, $result['message'], $result['data']);
             } else {
                 $this->sendResponse(500, false, $result['message']);
             }
@@ -76,6 +85,7 @@ class RentalController
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
     }
+
 
     // Thống kê tổng quan
     public function stats()

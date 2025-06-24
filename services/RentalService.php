@@ -107,6 +107,42 @@ class RentalService
         }
     }
 
+    //lấy tất cả các đơn thuê
+    //lấy tất cả các đơn thuê
+    public function getAllRentals($filters = [])
+    {
+        try {
+            // Lấy tham số phân trang từ filters hoặc sử dụng giá trị mặc định
+            $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+            $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
+            
+            // Tính offset
+            $offset = ($page - 1) * $limit;
+            
+            // Lấy dữ liệu từ model
+            $rentals = $this->rentalModel->getList($offset, $limit, $filters);
+            $total = $this->rentalModel->getTotalCount($filters);
+            
+            return [
+                'success' => true,
+                'message' => 'Lấy danh sách đơn thuê thành công',
+                'data' => [
+                    'rentals' => $rentals,
+                    'total' => $total,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total_pages' => ceil($total / $limit)
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách đơn thuê: ' . $e->getMessage()
+            ];
+        }
+    }
+
+
     //validate dữ liệu đơn thuê
     private function validateRentalData($data)
     {

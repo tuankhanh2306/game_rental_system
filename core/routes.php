@@ -46,11 +46,11 @@
 
     // ===== GAME CONSOLE ROUTES ===== 
     // FIX: Routes cho game console
-    $router->get('/game_consoles/index', [GameController::class, 'index']);           // Lấy danh sách
-    $router->post('/game_consoles/create', [GameController::class, 'create']);         // Tạo mới  
-    $router->get('/game_consoles/{id}', [GameController::class, 'show']);       // Lấy chi tiết
-    $router->put('/game_consoles/{id}', [GameController::class, 'update']);     // Cập nhật
-    $router->delete('/game_consoles/{id}', [GameController::class, 'delete']);  // Xóa
+    $router->get('/gameConsoles', [GameController::class, 'index']);           // Lấy danh sách
+    $router->post('/gameConsoles/create', [GameController::class, 'create']);         // Tạo mới  
+    $router->get('/gameConsoles/{id}', [GameController::class, 'show']);       // Lấy chi tiết
+    $router->put('/gameConsoles/{id}', [GameController::class, 'update']);     // Cập nhật
+    $router->delete('/gameConsoles/{id}', [GameController::class, 'delete']);  // Xóa
 
     // ===== RENTAL ROUTES =====
     $router->post('/rentals', [RentalController::class, 'create']);             // Tạo đơn thuê
