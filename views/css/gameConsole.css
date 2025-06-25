@@ -1,0 +1,305 @@
+:root {
+  --primary-color: #003366;
+  --secondary-color: #005599;
+  --light-bg: #f9f9f9;
+  --text-color: #333;
+  --card-bg: #fff;
+  --card-border: #ddd;
+  --hover-bg: #eef2f5;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: var(--light-bg);         
+  color: var(--text-color);         
+}
+
+header {
+  background-color: var(--primary-color);          
+  color: white;          
+  padding: 20px;          
+  text-align: center;          
+}        
+
+nav {
+  background-color: var(--secondary-color);          
+  text-align: center;          
+  padding: 10px 0;          
+}        
+
+nav a {
+  color: white;          
+  margin: 0 15px;          
+  text-decoration: none;          
+  font-weight: bold;          
+}        
+
+nav a:hover {
+  text-decoration: underline;          
+}               
+
+main {
+  background-color: #f0f0f0;          
+  padding: 20px;          
+  max-width: 1200px;          
+  margin: auto;          
+}                
+
+h2 {
+  color: blue;          
+  text-align: center;         
+  margin-bottom: 30px;          
+}        
+
+#Danhsach {
+  display: grid;          
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));         
+  gap: 20px;          
+}        
+
+#Danhsach div {
+  background-color: var(--card-bg);           
+  border: 1px solid var(--card-border);          
+  border-radius: 8px;          
+  padding: 15px;          
+  text-align: center;          
+  transition: background-color 0.3s ease;          
+}        
+
+#Danhsach div:hover {
+  background-color: var(--hover-bg);          
+}                
+
+#Danhsach img {
+  width: 100%;          
+  height: auto;          
+  border-radius: 5px;          
+}        
+
+#Danhsach h3 {
+  font-size: 16px;          
+  margin: 10px 0;
+}        
+
+#Danhsach p {
+  color: #cc0000;          
+  font-weight: bold;          
+}        
+
+footer {
+  background-color: var(--primary-color);          
+  color: white;          
+  text-align: center;          
+  padding: 10px 0;          
+  margin-top: 40px;          
+}        
+
+#Danhsach h3 a {
+  color: var(--text-color);  
+  text-decoration: none;
+  font-weight: bold;
+}        
+
+#Danhsach h3 a:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+
+
+/* cai dat cho cac thẻ thêm vào sau */
+
+.filter-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.search-box, .filter-box {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-box input, .filter-box select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-box button, .filter-box button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.search-box button:hover, .filter-box button:hover {
+    background-color: #0056b3;
+}
+
+#game-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.game-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.game-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.game-item img {
+    width: 100%;
+    max-width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.game-item h3 {
+    margin: 15px 0 10px 0;
+}
+
+.game-item h3 a {
+    text-decoration: none;
+    color: #333;
+}
+
+.game-item h3 a:hover {
+    color: #007bff;
+}
+
+.price {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin: 10px 0;
+}
+
+.type {
+    color: #666;
+    margin: 5px 0;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.status-available {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-rented {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-maintenance {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-unavailable {
+    background-color: #f1f3f4;
+    color: #5f6368;
+}
+
+.btn-rent {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.btn-rent:hover {
+    background-color: #218838;
+}
+
+.btn-rent.disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 30px;
+    grid-column: 1 / -1;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: white;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.pagination button:hover {
+    background-color: #f8f9fa;
+}
+
+.pagination button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.loading, .error, .no-data {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    grid-column: 1 / -1;
+}
+
+.error {
+    color: #e74c3c;
+}
+
+.loading {
+    color: #666;
+}
+
+.no-data {
+    color: #999;
+}
+
+@media (max-width: 768px) {
+    .filter-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    #game-container {
+        grid-template-columns: 1fr;
+    }
+}

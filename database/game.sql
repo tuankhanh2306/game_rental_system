@@ -27,19 +27,6 @@ CREATE TABLE users (
 SELECT * from users;
 
 -- ===================================================================
--- BẢNG 2: USER_SESSIONS - Quản lý phiên đăng nhập
--- ===================================================================
-CREATE TABLE user_sessions (
-    session_id VARCHAR(128) PRIMARY KEY,
-    user_id INT NOT NULL,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
--- ===================================================================
 -- BẢNG 3: GAME_CONSOLES - Quản lý máy chơi game
 -- ===================================================================
 CREATE TABLE game_consoles (

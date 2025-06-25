@@ -179,8 +179,8 @@
                     'console_name',
                     'console_type', 
                     'description', 
-                    'image_url', // FIX: Sửa từ 'image' thành 'image_url'
-                    'rental_price_per_hour', // FIX: Sửa từ 'rent_price' thành 'rental_price_per_hour'
+                    'image_url', 
+                    'rental_price_per_hour', 
                     'status'
                 ];
                 
@@ -380,13 +380,30 @@
             }
 
             // Kiểm tra đường dẫn hình ảnh
-            if ($required || isset($data['image_url'])) { // FIX: Sửa từ 'image' thành 'image_url'
-                if (!empty(trim($data['image_url'] ?? ''))) { // FIX: Cho phép để trống image_url
-                    if (!filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
-                        $errors[] = 'Đường dẫn hình ảnh không hợp lệ.';
+            if ($required || isset($data['image_url'])) {
+                if (!empty(trim($data['image_url'] ?? ''))) {
+                    $imageUrl = trim($data['image_url']);
+                    
+                    // Chấp nhận cả URL và đường dẫn tương đối
+                    $isValidUrl = filter_var($imageUrl, FILTER_VALIDATE_URL) !== false;
+                    $isValidPath = !empty($imageUrl) && strlen($imageUrl) > 0;
+                    
+                    if (!$isValidUrl && !$isValidPath) {
+                        $errors[] = 'Đường dẫn hình ảnh không được để trống.';
+                    }
+                    
+                    // Kiểm tra extension nếu là đường dẫn file
+                    if (!$isValidUrl) {
+                        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+                        $extension = strtolower(pathinfo($imageUrl, PATHINFO_EXTENSION));
+                        
+                        if (!in_array($extension, $allowedExtensions)) {
+                            $errors[] = 'Định dạng hình ảnh không được hỗ trợ. Chỉ chấp nhận: ' . implode(', ', $allowedExtensions);
+                        }
                     }
                 }
             }
+
             
             return [
                 'success' => empty($errors),
