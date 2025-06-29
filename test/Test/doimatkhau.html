@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đổi mật khẩu</title>
+  <link rel="stylesheet" href="./css/doimatkhau.css" />
+</head>
+<body>
+  <header>
+    <h1>THUÊ NHANH</h1>
+  </header>
+
+  <nav>
+    <a href="index.html">Trang chủ</a>
+    <a href="Danhsachmay.html">Danh sách máy</a>
+    <a href="giohang.html">Giỏ hàng</a>
+    <a href="profile.html">Trang cá nhân</a>
+  </nav>
+
+  <main>
+    <h2>Đổi mật khẩu</h2>
+    <form id="changePasswordForm" method="post" class="info-box">
+      <label>Mật khẩu hiện tại:</label><br>
+      <input type="password" name="current_password" required><br><br>
+
+      <label>Mật khẩu mới:</label><br>
+      <input type="password" name="new_password" required><br><br>
+
+      <label>Xác nhận mật khẩu mới:</label><br>
+      <input type="password" name="confirm_new_password" required><br><br>
+
+      <button type="submit">Đổi mật khẩu</button>
+    </form>
+  </main>
+
+  <footer>
+    &copy; 2025 Thuê Máy Nhanh - Bài tập lớn Lập trình Web
+  </footer>
+
+  <script>
+    document.getElementById("changePasswordForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>

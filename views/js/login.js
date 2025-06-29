@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Gửi request đến API
-            const response = await fetch('/login', {
+            const response = await fetch('/game_rental_system/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

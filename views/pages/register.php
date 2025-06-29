@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Tạo tài khoản</title>
-  <link rel="stylesheet" href="css/dangky.css">
+  <link rel="stylesheet" href="../css/register.css">
 </head>
 <body>
   <header>
@@ -12,25 +12,19 @@
 
   <main class="main-container">
     <h2 class="title">Tạo tài khoản</h2>
-  <form method="post" action="register.php" class="form">
-  <input type="text" name="full_name" placeholder="Họ và tên" required>
-  <input type="text" name="phone" placeholder="Số điện thoại" required>
-  <input type="email" name="email" placeholder="Email" required>
-  <input type="text" name="username" placeholder="Tên đăng nhập" required>
-  <input type="password" name="password" placeholder="Mật khẩu" required>
-
-  <button type="submit">Đăng ký</button>
-
-  <div class="back-link">
-    <a href="index.html">← Quay lại trang chủ</a>
-  </div>
-  <div><a href="login.html">Đã có tài khoản? Đăng nhập</a></div>
-  </form>
+    <form id="register-form">
+      <input type="text" id="userName" placeholder="Tên đăng nhập" required>
+      <input type="text" id="fullName" placeholder="Họ và tên" required>
+      <input type="tel" id="phone" placeholder="Số điện thoại" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Mật khẩu" required>
+      <button type="submit">Đăng ký</button>
+    </form>
   </main>
 
   <footer>
-    &copy; 2025 Thuê Máy Nhanh
+  &copy; 2025 Thuê Máy Nhanh
   </footer>
-  
+<script src="../js/register.js"></script>
 </body>
 </html>

@@ -25,89 +25,46 @@ class RentalService
     public function createRental($data)
     {
         try {
-            $validation = $this->validateRentalData($data);
-            
-            // Sửa lỗi logic validation
-            if (!$validation["valid"]) {
-                return [
-                    "success" => false,
-                    "message" => $validation["message"],
-                    "errors" => $validation["errors"],
-                ];
-            }
+        // Tính số giờ thuê
+        $start = new \DateTime($data['rental_start']);
+        $end = new \DateTime($data['rental_end']);
+        $diff = $start->diff($end);
 
-            //kiểm tra sự tồn tại của user
-            $user = $this->userModel->findById($data["user_id"]);
-            if (!$user) {
-                return [
-                    "success" => false,
-                    "message" => 'Người dùng không tồn tại'
-                ];
-            }
+        // Tổng giờ thuê
+        $total_hours = max(1, ($diff->days * 24) + $diff->h + round($diff->i / 60));
 
-            //kiểm tra máy chơi game có tồn tại hay không
-            $game = $this->gameModel->findById($data['console_id']);
-            if (!$game) {
-                return [
-                    'success' => false,
-                    'message' => 'Máy chơi game không tồn tại'
-                ];
-            }
+        // Lấy giá thuê mỗi giờ
+        $stmt = $this->db->prepare("SELECT rental_price_per_hour FROM game_consoles WHERE console_id = :console_id");
+        $stmt->execute([':console_id' => $data['console_id']]);
+        $price_per_hour = $stmt->fetchColumn();
 
-            if ($game['status'] !== 'available') {
-                return [
-                    'success' => false,
-                    'message' => 'Máy chơi game không có sẵn'
-                ];
-            }
-
-            // kiểm tra xung đột thời gian 
-            if ($this->rentalModel->checkTimeConflict($data['console_id'], $data['rental_start'], $data['rental_end'])) {
-                return [
-                    'success' => false,
-                    'message' => 'Thời gian thuê bị trung với đơn thuê khác'
-                ];
-            }
-
-            //tính toán tổng tiền 
-            $totalHours = $this->calculateTotalHours($data['rental_start'], $data['rental_end']);
-            $totalAmount = $totalHours * $game['rental_price_per_hour'];
-
-            $rentalData = [
-                'user_id' => $data['user_id'],
-                'console_id' => $data['console_id'],
-                'rental_start' => $data['rental_start'],
-                'rental_end' => $data['rental_end'],
-                'total_hours' => $totalHours,
-                'total_amount' => $totalAmount,
-                'status' => 'pending',
-                'notes' => $data['notes'] ?? ''
-            ];
-
-            $rentalId = $this->rentalModel->create($rentalData);
-
-            if ($rentalId) {
-                return [
-                    'success' => true,
-                    'message' => 'Tạo đơn thuê thành công',
-                    'rental_id' => $rentalId,
-                    'total_amount' => $totalAmount
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => 'Không thể tạo đơn thuê'
-                ];
-            }
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Lỗi khi tạo đơn thuê: ' . $e->getMessage()
-            ];
+        if (!$price_per_hour) {
+            return ['success' => false, 'message' => 'Không tìm thấy giá thuê cho console'];
         }
+
+        // Tính tổng tiền
+        $total_amount = $total_hours * $price_per_hour;
+
+        //  Gán lại vào $data
+        $data['total_hours'] = $total_hours;
+        $data['total_amount'] = $total_amount;
+        $data['status'] = $data['status'] ?? 'pending';
+        $data['notes'] = $data['notes'] ?? '';
+
+        $rentalId = $this->rentalModel->create($data);
+
+        return $rentalId
+            ? ['success' => true, 'data' => [
+                'rental_id' => $rentalId,
+                'total_hours' => $total_hours,
+                'total_amount' => $total_amount
+            ]]
+            : ['success' => false, 'message' => 'Không thể tạo đơn thuê'];
+    } catch (Exception $e) {
+        return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+    }
     }
 
-    //lấy tất cả các đơn thuê
     //lấy tất cả các đơn thuê
     public function getAllRentals($filters = [])
     {
@@ -551,6 +508,8 @@ class RentalService
             ];
         }
     }
+
+    
 
     /**
      * Lấy danh sách đơn thuê sắp hết hạn

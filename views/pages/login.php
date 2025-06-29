@@ -24,7 +24,8 @@
       <button type="submit">Đăng nhập</button>
     </form>
     <div class="bottom-link">
-      Chưa có tài khoản? <a href="dangky.html">Đăng ký</a>
+      Chưa có tài khoản? <a href="register.php">Đăng ký</a>
+    </div>
     </div>
   </div>
   

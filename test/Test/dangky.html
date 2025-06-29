@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Tạo tài khoản</title>
+  <link rel="stylesheet" href="./css/dangky.css">
+</head>
+<body>
+  <header>
+    <h1 class="logo">THUÊ NHANH</h1>
+  </header>
+
+  <main class="main-container">
+    <h2 class="title">Tạo tài khoản</h2>
+
+    <form id="registerForm" class="form">
+      <input type="text" name="full_name" placeholder="Họ và tên" required>
+      <input type="text" name="phone" placeholder="Số điện thoại" required>
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="text" name="username" placeholder="Tên đăng nhập" required>
+      <input type="password" name="password" placeholder="Mật khẩu" required>
+
+      <button type="submit">Đăng ký</button>
+
+      <div class="back-link">
+        <a href="index.html">← Quay lại trang chủ</a>
+      </div>
+      <div><a href="login.html">Đã có tài khoản? Đăng nhập</a></div>
+    </form>
+  </main>
+
+  <footer>
+    &copy; 2025 Thuê Máy Nhanh
+  </footer>
+
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      alert("Đăng ký thành công! Mời bạn đăng nhập.");
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>

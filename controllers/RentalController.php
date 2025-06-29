@@ -124,29 +124,29 @@ class RentalController
     }
 
     // Cập nhật trạng thái đơn thuê (PUT /rentals/{id}/status)
-public function updateStatus($id)
-{
-    try {
-        if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
-            $this->sendResponse(405, false, 'Method không được hỗ trợ');
-            return;
+    public function updateStatus($id)
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+                $this->sendResponse(405, false, 'Method không được hỗ trợ');
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            if (empty($data['status'])) {
+                $this->sendResponse(400, false, 'Thiếu trường status');
+                return;
+            }
+
+            $notes = $data['notes'] ?? '';
+            $result = $this->rentalService->updateStatus($id, $data['status'], $notes);
+
+            $this->sendResponse($result['success'] ? 200 : 400, $result['success'], $result['message']);
+        } catch (Exception $e) {
+            $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
-
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        if (empty($data['status'])) {
-            $this->sendResponse(400, false, 'Thiếu trường status');
-            return;
-        }
-
-        $notes = $data['notes'] ?? '';
-        $result = $this->rentalService->updateStatus($id, $data['status'], $notes);
-
-        $this->sendResponse($result['success'] ? 200 : 400, $result['success'], $result['message']);
-    } catch (Exception $e) {
-        $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
     }
-}
 
 
     // Lấy thống kê theo trạng thái đơn thuê

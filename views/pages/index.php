@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Thuê Máy Nhanh</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../css/index.css">
 </head>
 <body>
     <header>
@@ -11,15 +11,66 @@
     </header>
 
     <nav>
-        <a href="index.html">Trang chủ</a>
-        <a href="/Test/login.html">Đăng nhập / Đăng ký</a>
-        <a href="danhsach.html">Danh sách máy</a>
+        <a href="index.php">Trang chủ</a>
+        <a href="login.php">Đăng nhập / Đăng ký</a>
+        <a href="gameConsole.php">Danh sách máy</a>
+        <!-- tiep tuc o day -->
         <a href="datthue.html">Đặt thuê</a>
+        <a href="giohang.html">Giỏ hàng</a>
     </nav>
 
+    <div class="intro">
+        <img src="./image/hình ảnh trang chủ.png" alt="Banner trang chu"/>
+    </div>
+
     <main>
-        <h2>Chào mừng bạn đến với dịch vụ Thuê Máy!</h2>
-        <p>Đây là giao diện trang chủ. Bạn có thể chọn các chức năng ở menu trên.</p>
+    <section class="intro">
+      <h2>Chào mừng bạn đến với Thuê Máy Nhanh!</h2>
+      <p>Chúng tôi cung cấp dịch vụ cho thuê máy chơi game hiện đại với quy trình nhanh chóng, đơn giản và giao hàng tận nơi.</p>
+    </section>
+
+    <section class="featured-products">
+      <h2>Máy chơi game nổi bật</h2>
+      <div class="product-grid">
+        <div class="product-card">
+          <img src="image/Sony PlayStation 5.png" alt="PlayStation 5">
+          <h4>PlayStation 5</h4>
+          <p>1.500.000 VND</p>
+          <a href="./SonyPlaystation5.html">Xem chi tiết</a>
+        </div>
+
+        <div class="product-card">
+          <img src="image/Nintendo Switch.png" alt="Nintendo Switch">
+          <h4>Nintendo Switch</h4>
+          <p>2.500.000 VND</p>
+          <a href="./NintendoSwitch.html">Xem chi tiết</a>
+        </div>
+
+        <div class="product-card">
+          <img src="image/Xbox Series X.png" alt="Xbox Series X">
+          <h4>Xbox Series X</h4>
+          <p>1.300.000 VND</p>
+          <a href="./XboxSeriesX.html">Xem chi tiết</a>
+        </div>
+
+        <div class="product-card">
+          <img src="image/Nintendo Switch Lite.png" alt="Nintendo Switch Lite">
+          <h4>Nintendo Switch Lite</h4>
+          <p>2.600.000 VND</p>
+          <a href="./NintendoSwitchLite.html">Xem chi tiết</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="why-choose">
+      <h2>Tại sao chọn chúng tôi?</h2>
+      <ul>
+        <li>✔ Thủ tục thuê máy cực đơn giản</li>
+        <li>✔ Giao hàng nhanh chóng toàn quốc</li>
+        <li>✔ Máy mới, chất lượng, đa dạng lựa chọn</li>
+        <li>✔ Hỗ trợ kỹ thuật 24/7</li>
+      </ul>
+    </section>
     </main>
 
     <footer>

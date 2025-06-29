@@ -155,7 +155,8 @@ try {
             }
             break;
 
-            
+        // CartItem routes 
+        
         // Rentals routes
         case ($path === '/rentals' && $method === 'POST'):
             $controller = new RentalController($database);

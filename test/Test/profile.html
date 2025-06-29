@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang cá nhân</title>
+  <link rel="stylesheet" href="./css/profile.css">
+</head>
+<body>
+  <header>
+    <div class="logo">THUÊ NHANH</div>
+    <div class="user-menu">
+      <span class="username">Tên Người Dùng</span>
+      <div class="dropdown">
+        <a href="./thongtinnguoidung.html">Thông tin cá nhân</a>
+        <a href="./doimatkhau.html">Đổi mật khẩu</a>
+        <a href="#" id="logoutBtn">Đăng xuất</a>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="index.html">Trang chủ</a>
+    <a href="Danhsachmay.html">Danh sách máy</a>
+    <a href="giohang.html">Giỏ hàng</a>
+  </nav>
+
+  <main>
+    <h2>Thông tin cá nhân</h2>
+    <div class="info-box">
+      <p><strong>Họ và tên:</strong> Tên Người Dùng</p>
+      <p><strong>Email:</strong> email@example.com</p>
+      <p><strong>Số điện thoại:</strong> 0123456789</p>
+      <p><strong>Tên đăng nhập:</strong> username123</p>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2025 Thuê Máy Nhanh
+  </footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const userMenu = document.querySelector(".user-menu");
+        const username = userMenu.querySelector(".username");
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        username.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userMenu.classList.toggle("show");
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!userMenu.contains(e.target)) {
+          userMenu.classList.remove("show");
+        }
+      });
+
+      logoutBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        window.location.href = "login.html";
+      });
+    });
+  </script>
+
+</body>
+</html>

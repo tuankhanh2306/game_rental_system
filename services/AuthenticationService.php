@@ -11,7 +11,7 @@ class AuthenticationService
     private $jwtAuth;
     private $jwtConfig;
     
-    public function __construct($database)
+    public function __construct($database )
     {
         $this->userModel = new User($database);
         $this->jwtAuth = new JWTAuth($database);
@@ -142,6 +142,76 @@ class AuthenticationService
             error_log("Lỗi đăng nhập: " . $e->getMessage());
             return ['success' => false, 'message' => 'Đã xảy ra lỗi hệ thống'];
         }
+    }
+
+    /**
+     * Xác thực token và lấy thông tin user
+     */
+    public function authenticate($authHeader) {
+        if (empty($authHeader)) {
+            return [
+                'success' => false,
+                'message' => 'Token không được cung cấp'
+            ];
+        }
+        
+        $userInfo = $this->jwtAuth->getUserFromToken($authHeader);
+        if (!$userInfo) {
+            return [
+                'success' => false,
+                'message' => 'Token không hợp lệ hoặc đã hết hạn'
+            ];
+        }
+        
+        return [
+            'success' => true,
+            'user' => $userInfo
+        ];
+    }
+    
+    /**
+     * Kiểm tra quyền truy cập dựa trên role
+     */
+    public function hasPermission($userRole, $requiredRole) {
+        $roleHierarchy = [
+            'admin' => 3,
+            'manager' => 2,
+            'user' => 1
+        ];
+        
+        $userLevel = $roleHierarchy[$userRole] ?? 0;
+        $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
+        
+        return $userLevel >= $requiredLevel;
+    }
+    
+    /**
+     * Kiểm tra quyền truy cập dữ liệu user
+     */
+    public function canAccessUserData($currentUser, $targetUserId, $action = 'read') {
+        // Admin có thể làm tất cả
+        if ($currentUser['role'] === 'admin') {
+            return true;
+        }
+        
+        // Manager có thể xem và sửa user thường
+        if ($currentUser['role'] === 'manager' && in_array($action, ['read', 'update'])) {
+            return true;
+        }
+        
+        // User chỉ có thể truy cập dữ liệu của chính mình
+        if ($currentUser['user_id'] == $targetUserId) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Kiểm tra quyền phân trang dựa trên role
+     */
+    public function canAccessPagination($userRole) {
+        return in_array($userRole, ['admin']);
     }
 }
 ?>

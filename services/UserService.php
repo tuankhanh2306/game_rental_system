@@ -1,17 +1,37 @@
 <?php
     namespace services;
     use models\User;
+    use services\AuthenticationService;
     use Exception;
     class UserService{
         private $userModel;
+        private $authService;
         public function __construct($database){
             $this->userModel = new User($database);
+            $this->authService = new AuthenticationService($database);
         }
 
 
         //Lấy thông tin người dùng theo ID
-        public function getUserbyId($userId){
+        public function getUserbyId($userId,$authHeader){
             try{
+
+                // Xác thực token
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+                
+                $currentUser = $authResult['user'];
+                
+                // Kiểm tra quyền truy cập
+                if (!$this->authService->canAccessUserData($currentUser, $userId, 'read')) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không có quyền truy cập thông tin này'
+                    ];
+                }
+
                 $user = $this->userModel->findById($userId);
                 if (!$user) {
                     return [
@@ -34,10 +54,38 @@
         }
 
         //cập nhật thông tin người dùng
-        //cập nhật thông tin người dùng
-        public function updateUser($userId, $data)
+        public function updateUser($userId, $data, $authHeader)
         {
             try {
+
+                // Xác thực token
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+                
+                $currentUser = $authResult['user'];
+                
+                // Kiểm tra quyền truy cập
+                if (!$this->authService->canAccessUserData($currentUser, $userId, 'update')) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không có quyền cập nhật thông tin này'
+                    ];
+                }
+                
+                // Kiểm tra quyền thay đổi role (chỉ admin mới được)
+                if (isset($data['role']) && $currentUser['role'] !== 'admin') {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không có quyền thay đổi vai trò người dùng'
+                    ];
+                }
+                
+                // User thường không thể thay đổi status của chính mình
+                if (isset($data['status']) && $currentUser['user_id'] == $userId && $currentUser['role'] === 'user') {
+                    unset($data['status']);
+                }
                 // Kiểm tra xem người dùng có tồn tại hay không
                 $existingUser = $this->userModel->findById($userId);
                 if (!$existingUser) {
@@ -133,13 +181,32 @@
         }
 
 
-
-
-
-
         //xóa mềm người dùng
-        public function deleteUser($userId){
+        public function deleteUser($userId ,$authHeader){
             try{
+                // Xác thực token
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+                
+                $currentUser = $authResult['user'];
+                
+                // Chỉ admin mới có quyền xóa user
+                if (!$this->authService->hasPermission($currentUser['role'], 'admin')) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không có quyền xóa người dùng'
+                    ];
+                }
+                
+                // Không cho phép xóa chính mình
+                if ($currentUser['user_id'] == $userId) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không thể xóa tài khoản của chính mình'
+                    ];
+                }
                 //kiểm tra xem người dùng có tồn tại hay không
                 $existingUser = $this->userModel->findById($userId);
                 if (!$existingUser) {
@@ -170,8 +237,26 @@
         }
 
         //laasy danh sách người dùng với phân trang
-        public function getUsers($page = 1, $limit = 10, $search = ''){
+        public function getUsers($page = 1, $limit = 10, $search = '',$authHeader = null){
             try {
+                // Xác thực token
+               // Xác thực token
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+                
+                $currentUser = $authResult['user'];
+                
+                // Kiểm tra quyền truy cập danh sách
+                if (!$this->authService->canAccessPagination($currentUser['role'])) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn không có quyền truy cập danh sách người dùng'
+                    ];
+                }
+
+
                 $user = $this->userModel->getAll($page, $limit, $search);
                 $total = $this->userModel->countAll($search);
                 //xoas mật khẩu khỏi kết quả trả về
@@ -212,8 +297,24 @@
         }
 
         //doi mật khẩu người dùng
-        public function changePassword($userId,$oldPassword, $newPasseord){
+        public function changePassword($userId,$oldPassword, $newPassword,$authHeader){
             try{
+                // Xác thực token
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+                
+                $currentUser = $authResult['user'];
+                
+                // Chỉ có thể đổi mật khẩu của chính mình
+                if ($currentUser['user_id'] != $userId) {
+                    return [
+                        'success' => false,
+                        'message' => 'Bạn chỉ có thể đổi mật khẩu của chính mình'
+                    ];
+                }
+
                 $user = $this->userModel->findById($userId);
                 if (!$user) {
                     return [
@@ -230,7 +331,7 @@
                     ];
                 }
                 //validate mật khẩu mới
-                if(strlen($newPasseord) < 6){
+                if(strlen($newPassword) < 6){
                     return [
                         'success' => false,
                         'message' => 'Mật khẩu mới phải có ít nhất 6 ký tự'
@@ -238,7 +339,7 @@
                 }
 
                 //mã hóa mật khẩu mới
-                $newPasswordHash = password_hash($newPasseord, PASSWORD_BCRYPT);
+                $newPasswordHash = password_hash($newPassword, PASSWORD_BCRYPT);
                 // Cập nhật password trực tiếp trong database
                 // Giữ nguyên các thông tin khác, chỉ cập nhật password_hash
                 $updateData = [
@@ -252,7 +353,7 @@
 
                 // Sử dụng method update có sẵn nhưng cần thêm password_hash
                 // Tạm thời xử lý trực tiếp SQL
-                $sql = "UPDATE users SET password_hash = :password_hash WHERE id = :id";
+                $sql = "UPDATE users SET password_hash = :password_hash WHERE user_id = :user_id";
                 $stmt = $this->userModel->getDatabase()->prepare($sql);
                 $stmt->bindParam(':id', $userId);
                 $stmt->bindParam(':password_hash', $newPasswordHash);
@@ -279,6 +380,32 @@
                 ];
             }
         }
+        
+        // Lấy người dùng từ token
+        public function getUserFromToken($authHeader)
+        {
+            try {
+                $authResult = $this->authService->authenticate($authHeader);
+                if (!$authResult['success']) {
+                    return $authResult;
+                }
+
+                $currentUser = $authResult['user'];
+                unset($currentUser['password_hash']); // Xóa mật khẩu nếu có
+
+                return [
+                    'success' => true,
+                    'user' => $currentUser
+                ];
+            } catch (Exception $e) {
+                return [
+                    'success' => false,
+                    'message' => 'Lỗi khi lấy người dùng từ token',
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+
 
 
         // Hàm validate dữ liệu người dùng

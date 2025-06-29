@@ -3,20 +3,17 @@ namespace controllers;
 
 use services\UserService;
 use core\Database;
-use core\JWTAuth;
 use Exception;
 
 class UserController
 {
     private $userService;
-    private $jwtAuth;
     private $db;
 
     public function __construct($database = null)
     {
         $this->db = $database ?? Database::getInstance()->getConnection();
         $this->userService = new UserService($this->db);
-        $this->jwtAuth = new JWTAuth();
     }
 
     /**
@@ -31,12 +28,24 @@ class UserController
                 return;
             }
 
-            // Xác thực token
-            $user = $this->authenticateUser();
-            if (!$user) return;
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
+                return;
+            }
+
+            // Xác thực và lấy thông tin user từ token
+            $authResult = $this->userService->getUserFromToken($authHeader);
+            if (!$authResult['success']) {
+                $this->sendResponse(401, false, $authResult['message']);
+                return;
+            }
+
+            $userId = $authResult['user']['user_id'];
 
             // Lấy thông tin user
-            $result = $this->userService->getUserbyId($user['user_id']);
+            $result = $this->userService->getUserbyId($userId, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, 'Lấy thông tin thành công', $result['user']);
@@ -49,7 +58,10 @@ class UserController
         }
     }
 
-    //lấy người dùng theo id
+    /**
+     * Lấy người dùng theo id
+     * GET /api/users/{id}
+     */
     public function getUserById($userId)
     {
         try {
@@ -58,23 +70,21 @@ class UserController
                 return;
             }
 
-            // Xác thực token
-            $user = $this->authenticateUser();
-            if (!$user) return;
-
-            // Chỉ admin mới có thể lấy thông tin người dùng khác
-            if ($user['role'] !== 'admin') {
-                $this->sendResponse(403, false, 'Không có quyền truy cập');
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
                 return;
             }
 
             // Lấy thông tin user
-            $result = $this->userService->getUserbyId($userId);
+            $result = $this->userService->getUserbyId($userId, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, 'Lấy thông tin thành công', $result['user']);
             } else {
-                $this->sendResponse(404, false, $result['message']);
+                $statusCode = ($result['message'] === 'Bạn không có quyền truy cập thông tin này') ? 403 : 404;
+                $this->sendResponse($statusCode, false, $result['message']);
             }
 
         } catch (Exception $e) {
@@ -94,9 +104,21 @@ class UserController
                 return;
             }
 
-            // Xác thực token
-            $user = $this->authenticateUser();
-            if (!$user) return;
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
+                return;
+            }
+
+            // Xác thực và lấy thông tin user từ token
+            $authResult = $this->userService->getUserFromToken($authHeader);
+            if (!$authResult['success']) {
+                $this->sendResponse(401, false, $authResult['message']);
+                return;
+            }
+
+            $userId = $authResult['user']['user_id'];
 
             $input = json_decode(file_get_contents('php://input'), true);
             if (!$input) {
@@ -105,12 +127,13 @@ class UserController
             }
 
             // Cập nhật thông tin
-            $result = $this->userService->updateUser($user['user_id'], $input);
+            $result = $this->userService->updateUser($userId, $input, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, $result['message']);
             } else {
-                $this->sendResponse(400, false, $result['message'], $result['error'] ?? null);
+                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 400;
+                $this->sendResponse($statusCode, false, $result['message'], $result['error'] ?? null);
             }
 
         } catch (Exception $e) {
@@ -130,9 +153,21 @@ class UserController
                 return;
             }
 
-            // Xác thực token
-            $user = $this->authenticateUser();
-            if (!$user) return;
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
+                return;
+            }
+
+            // Xác thực và lấy thông tin user từ token
+            $authResult = $this->userService->getUserFromToken($authHeader);
+            if (!$authResult['success']) {
+                $this->sendResponse(401, false, $authResult['message']);
+                return;
+            }
+
+            $userId = $authResult['user']['user_id'];
 
             $input = json_decode(file_get_contents('php://input'), true);
             
@@ -143,9 +178,10 @@ class UserController
 
             // Đổi mật khẩu
             $result = $this->userService->changePassword(
-                $user['user_id'],
+                $userId,
                 $input['old_password'],
-                $input['new_password']
+                $input['new_password'],
+                $authHeader
             );
             
             if ($result['success']) {
@@ -171,12 +207,10 @@ class UserController
                 return;
             }
 
-            // Xác thực và kiểm tra quyền admin
-            $user = $this->authenticateUser();
-            if (!$user) return;
-
-            if ($user['role'] !== 'admin') {
-                $this->sendResponse(403, false, 'Không có quyền truy cập');
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
                 return;
             }
 
@@ -189,7 +223,7 @@ class UserController
             $page = max(1, $page);
             $limit = max(1, min(100, $limit)); // Giới hạn tối đa 100 records
 
-            $result = $this->userService->getUsers($page, $limit, $search);
+            $result = $this->userService->getUsers($page, $limit, $search, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, 'Lấy danh sách thành công', [
@@ -202,7 +236,8 @@ class UserController
                     ]
                 ]);
             } else {
-                $this->sendResponse(500, false, $result['message']);
+                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 500;
+                $this->sendResponse($statusCode, false, $result['message']);
             }
 
         } catch (Exception $e) {
@@ -222,11 +257,21 @@ class UserController
                 return;
             }
 
-            // Xác thực và kiểm tra quyền admin
-            $user = $this->authenticateUser();
-            if (!$user) return;
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
+                return;
+            }
 
-            if ($user['role'] !== 'admin') {
+            // Kiểm tra quyền admin (có thể thêm vào UserService)
+            $authResult = $this->userService->getUserFromToken($authHeader);
+            if (!$authResult['success']) {
+                $this->sendResponse(401, false, $authResult['message']);
+                return;
+            }
+
+            if ($authResult['user']['role'] !== 'admin') {
                 $this->sendResponse(403, false, 'Không có quyền truy cập');
                 return;
             }
@@ -256,27 +301,20 @@ class UserController
                 return;
             }
 
-            // Xác thực và kiểm tra quyền admin
-            $user = $this->authenticateUser();
-            if (!$user) return;
-
-            if ($user['role'] !== 'admin') {
-                $this->sendResponse(403, false, 'Không có quyền truy cập');
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
                 return;
             }
 
-            // Không cho phép admin tự xóa chính mình
-            if ($user['user_id'] == $userId) {
-                $this->sendResponse(400, false, 'Không thể xóa chính mình');
-                return;
-            }
-
-            $result = $this->userService->deleteUser($userId);
+            $result = $this->userService->deleteUser($userId, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, $result['message']);
             } else {
-                $this->sendResponse(400, false, $result['message']);
+                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 400;
+                $this->sendResponse($statusCode, false, $result['message']);
             }
 
         } catch (Exception $e) {
@@ -288,7 +326,7 @@ class UserController
      * Cập nhật thông tin người dùng (Admin only)
      * PUT /api/users/{id}
      */
-    public function updateUser($userId )
+    public function updateUser($userId)
     {
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
@@ -296,12 +334,10 @@ class UserController
                 return;
             }
 
-            // Xác thực và kiểm tra quyền admin
-            $user = $this->authenticateUser();
-            if (!$user) return;
-
-            if ($user['role'] !== 'admin') {
-                $this->sendResponse(403, false, 'Không có quyền truy cập');
+            // Lấy auth header
+            $authHeader = $this->getAuthHeader();
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
                 return;
             }
 
@@ -311,12 +347,13 @@ class UserController
                 return;
             }
 
-            $result = $this->userService->updateUser($userId, $input);
+            $result = $this->userService->updateUser($userId, $input, $authHeader);
             
             if ($result['success']) {
                 $this->sendResponse(200, true, $result['message']);
             } else {
-                $this->sendResponse(400, false, $result['message'], $result['error'] ?? null);
+                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 400;
+                $this->sendResponse($statusCode, false, $result['message'], $result['error'] ?? null);
             }
 
         } catch (Exception $e) {
@@ -327,6 +364,7 @@ class UserController
     /**
      * Refresh token
      * POST /api/users/refresh-token
+     * Note: Chức năng này có thể được chuyển sang AuthController
      */
     public function refreshToken()
     {
@@ -343,56 +381,23 @@ class UserController
                 return;
             }
 
-            // Validate refresh token
-            $tokenData = $this->jwtAuth->validateToken($input['refresh_token']);
-            
-            if (!$tokenData || $tokenData['type'] !== 'refresh_token') {
-                $this->sendResponse(401, false, 'Refresh token không hợp lệ');
-                return;
-            }
-
-            // Tạo access token mới
-            $tokenPayload = [
-                'user_id' => $tokenData['user_id'],
-                'role' => $tokenData['role']
-            ];
-            
-            $newAccessToken = $this->jwtAuth->generateToken($tokenPayload, 'access_token');
-
-            $this->sendResponse(200, true, 'Token đã được làm mới', [
-                'access_token' => $newAccessToken,
-                'token_type' => 'Bearer'
-            ]);
+            // Có thể implement logic refresh token trong UserService
+            // hoặc chuyển sang AuthService/AuthController
+            $this->sendResponse(501, false, 'Chức năng chưa được triển khai');
 
         } catch (Exception $e) {
             $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
         }
     }
 
-    
-
     /**
-     * Xác thực người dùng từ JWT token
+     * Lấy auth header từ request
      */
-    private function authenticateUser()
+    private function getAuthHeader()
     {
         $headers = getallheaders();
-        $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : 
-                     (isset($headers['authorization']) ? $headers['authorization'] : null);
-
-        if (!$authHeader) {
-            $this->sendResponse(401, false, 'Token không được cung cấp');
-            return false;
-        }
-
-        $tokenData = $this->jwtAuth->validateToken($authHeader);
-        
-        if (!$tokenData) {
-            $this->sendResponse(401, false, 'Token không hợp lệ hoặc đã hết hạn');
-            return false;
-        }
-
-        return $tokenData;
+        return isset($headers['Authorization']) ? $headers['Authorization'] : 
+               (isset($headers['authorization']) ? $headers['authorization'] : null);
     }
 
     /**

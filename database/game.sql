@@ -36,9 +36,22 @@ CREATE TABLE game_consoles (
     description TEXT, -- Mô tả chi tiết
     image_url VARCHAR(255), -- Đường dẫn hình ảnh
     rental_price_per_hour DECIMAL(10,2) NOT NULL, -- Giá thuê theo giờ
-    status ENUM('available', 'rented', 'maintenance') DEFAULT 'available', -- Trạng thái máy
+    quantity INT NOT NULL DEFAULT 1, -- Tổng số lượng máy
+    available_quantity INT NOT NULL DEFAULT 1, -- Số lượng hiện còn sẵn sàng để thuê
+    status ENUM('available', 'rented', 'maintenance') DEFAULT 'available', -- Trạng thái tổng thể
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+-- lưu đơn hàng
+CREATE TABLE cart_items (
+    cart_item_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL, -- id người dùng
+    console_id INT NOT NULL, -- id sản phẩm
+    image_url VARCHAR(255),
+    quantity INT NOT NULL DEFAULT 1,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ===================================================================

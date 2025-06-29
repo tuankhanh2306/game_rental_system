@@ -25,7 +25,6 @@
     use controllers\UserController;
     use controllers\RentalController;
     use controllers\RentalHistoryController;
-    use middleware\TokenAuthMiddleware;
 
     $router = new Router();
 
@@ -71,7 +70,6 @@
     $router->get('/users/stats', [UserController::class, 'getUserStats']);
     $router->put('/users/{id}', [UserController::class, 'updateUser']);
     $router->delete('/users/{id}', [UserController::class, 'deleteUser']);
-
     //
 
     // Thực thi dispatch

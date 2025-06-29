@@ -37,6 +37,7 @@
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
+
         // Lấy tất cả bản ghi theo điều kiện
         public function where($conditions, $operator = 'AND', $orderBy = null, $limit = null)
         {
