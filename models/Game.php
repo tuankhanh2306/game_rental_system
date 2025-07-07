@@ -42,78 +42,82 @@ class Game{
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    //lấy tất cả máy chơi game có sẵn
+    //lấy tất cả máy chơi game có sẵn // k có sẵn xóa AND status = 'available'
     public function getAvailable($page = 1, $limit = 12, $type = '', $search = '')
     {
         $offset = ($page - 1) * $limit;
-        
-        $whereClause = "WHERE available_quantity > 0 AND status = 'available'";
+
+        $whereClause = "WHERE available_quantity > 0";
         $params = [];
-        
+
         if (!empty(trim($type))) {
-            $whereClause .= " AND console_type = :type";
-            $params[':type'] = $type;
+            $whereClause .= " AND console_type = ?";
+            $params[] = $type;
         }
-        
+
         if (!empty(trim($search))) {
-            $whereClause .= " AND (console_name LIKE :search OR description LIKE :search)";
-            $params[':search'] = "%{$search}%";
+            $whereClause .= " AND (console_name LIKE ? OR description LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
         }
 
         $sql = "SELECT * FROM {$this->table} {$whereClause}
-                 ORDER BY console_name ASC
-                 LIMIT :limit OFFSET :offset";
-        
+                ORDER BY console_id ASC
+                LIMIT ? OFFSET ?";
+
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        
-        foreach ($params as $key => $value) {
-            $stmt->bindParam($key, $value);
-        }
-        
-        $stmt->execute();
+
+        $stmt->execute($params);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
 
     //lấy tất cả máy (admin)
     public function getAll($page = 1, $limit = 12, $type = '', $search = '')
     {
         $offset = ($page - 1) * $limit;
-        
+
         $whereClause = '';
         $params = [];
-        
+
         if (!empty(trim($type))) {
-            $whereClause .= " WHERE console_type = :type";
-            $params[':type'] = $type;
+            $whereClause .= " WHERE console_type = ?";
+            $params[] = $type;
         }
-        
+
         if (!empty(trim($search))) {
-            if ($whereClause == '') {
+            if ($whereClause === '') {
                 $whereClause .= " WHERE ";
             } else {
                 $whereClause .= " AND ";
             }
-            $whereClause .= "(console_name LIKE :search OR description LIKE :search)";
-            $params[':search'] = "%{$search}%";
+            $whereClause .= "(console_name LIKE ? OR description LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
         }
 
         $sql = "SELECT * FROM {$this->table} {$whereClause}
-                 ORDER BY console_name ASC
-                 LIMIT :limit OFFSET :offset";
-        
+                ORDER BY console_name ASC
+                LIMIT ? OFFSET ?";
+
+        // Thêm limit và offset vào cuối mảng
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        
-        foreach ($params as $key => $value) {
-            $stmt->bindParam($key, $value);
-        }
-        
-        $stmt->execute();
+
+        $stmt->execute($params);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
+
     
     // Đếm tổng số máy
     public function count($search = '', $availableOnly = false)
@@ -200,12 +204,14 @@ class Game{
     // Thống kê máy theo trạng thái
     public function getStatusStats()
     {
-        $sql = "SELECT status, COUNT(*) as count, SUM(quantity) as total_quantity, SUM(available_quantity) as total_available 
-                FROM {$this->table} GROUP BY status";
+        $sql = "SELECT status, COUNT(*) as total_count, SUM(quantity) as total_quantity, SUM(available_quantity) as total_available FROM {$this->table} GROUP BY status";
+        
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
 
     // Lấy console phổ biến nhất
     public function getPopularConsoles($limit = 5)

@@ -1,0 +1,124 @@
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
+    }
+    
+        /* HEADER nổi + hiệu ứng mờ */
+    header {
+      background-color: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    
+    .logo {
+      color: #1e3a8a;
+      font-size: 24px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: transform 0.2s ease, color 0.3s ease;
+      display: inline-block;
+    }
+
+    .logo:hover {
+      color: #2563eb;
+      transform: scale(1.08); /* to lên nhẹ */
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin: 50px auto;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 30px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 24px;
+      color: #2563eb;
+      margin-bottom: 30px;
+      position: relative;
+    }
+    
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #0284c7;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0369a1;
+    }
+
+    .bottom-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .bottom-link a {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .bottom-link a:hover {
+      text-decoration: underline;
+    }
+
+
+    body.slideshow-background {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background-image 1s ease-in-out;
+      min-height: 100vh;
+    }
+
+    .overlay {
+      backdrop-filter: blur(8px);
+      background-color: rgba(255, 255, 255, 0.3);
+      min-height: calc(100vh - 70px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }

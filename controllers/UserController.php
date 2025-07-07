@@ -187,12 +187,18 @@ class UserController
             if ($result['success']) {
                 $this->sendResponse(200, true, $result['message']);
             } else {
-                $this->sendResponse(400, false, $result['message']);
+                $this->sendResponse(400, false, $result['message'], ['error' => $result['error'] ?? null]);
             }
 
+
         } catch (Exception $e) {
-            $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi đổi mật khẩu',
+                'error' => $e->getMessage()
+            ];
         }
+
     }
 
     /**
@@ -207,43 +213,74 @@ class UserController
                 return;
             }
 
-            // Lấy auth header
+            // Lấy token
             $authHeader = $this->getAuthHeader();
             if (!$authHeader) {
                 $this->sendResponse(401, false, 'Token không được cung cấp');
                 return;
             }
 
-            // Lấy parameters
+            // Debug: In ra tất cả GET parameters
+            error_log("GET Parameters: " . print_r($_GET, true));
+
+            // Lấy query parameters với validation
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-            $search = isset($_GET['search']) ? $_GET['search'] : '';
+            $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-            // Validate parameters
+             error_log("=== DEBUG getUsers START ===");
+            error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+            error_log("GET params: " . print_r($_GET, true));
+            error_log("Headers: " . print_r(getallheaders(), true));
+            // Debug: In ra các giá trị
+            error_log("Page: $page, Limit: $limit, Search: '$search'");
+
+            // Validate
             $page = max(1, $page);
-            $limit = max(1, min(100, $limit)); // Giới hạn tối đa 100 records
+            $limit = max(1, min(100, $limit));
 
+            // Kiểm tra search parameter có hợp lệ không
+            if (strlen($search) > 100) {
+                $this->sendResponse(400, false, 'Từ khóa tìm kiếm quá dài');
+                return;
+            }
+
+            // Gọi service
             $result = $this->userService->getUsers($page, $limit, $search, $authHeader);
-            
+
+            // Debug: In ra kết quả từ service
+            error_log("Service result: " . print_r($result, true));
+
             if ($result['success']) {
+                // Kiểm tra dữ liệu trước khi trả về
+                if (!isset($result['data']['users']) || !isset($result['data']['total'])) {
+                    $this->sendResponse(500, false, 'Dữ liệu trả về không đúng format');
+                    return;
+                }
+
                 $this->sendResponse(200, true, 'Lấy danh sách thành công', [
-                    'users' => $result['users'],
+                    'users' => $result['data']['users'],
                     'pagination' => [
-                        'total' => $result['total'],
-                        'page' => $result['page'],
-                        'limit' => $result['limit'],
-                        'total_pages' => ceil($result['total'] / $result['limit'])
+                        'total' => (int)$result['data']['total'],
+                        'page' => (int)$result['data']['page'],
+                        'limit' => (int)$result['data']['limit'],
+                        'total_pages' => (int)ceil($result['data']['total'] / $result['data']['limit'])
                     ]
                 ]);
             } else {
-                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 500;
+                $statusCode = (strpos($result['message'], 'quyền') !== false) ? 403 : 400;
                 $this->sendResponse($statusCode, false, $result['message']);
             }
-
         } catch (Exception $e) {
+            // Debug: In ra lỗi chi tiết
+            error_log("Error in getUsers: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
             $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
         }
     }
+
+
 
     /**
      * Lấy thống kê người dùng (Admin only)

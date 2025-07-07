@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(result.user.role){
                     localStorage.setItem('role', result.user.role);
                 }
+                if(result.user.id){
+                    localStorage.setItem('id', result.user.id);
+                }
+                
+                
                 
                 // Lưu thông tin user nếu có
                 if (result.user) {

@@ -24,10 +24,19 @@
         <h1>Danh sách máy</h1>
     </header>
     <nav>
-        <a href="index.html">Trang chủ</a>
-        <a href="login.html">Đăng nhập / Đăng ký</a>
-        <a href="datthue.html">Đặt thuê</a>
-        <a href="#" onclick="logout()">Đăng xuất </a>
+        <a href="index.php">Trang chủ</a>
+        <a href="gameConsole.php">Danh sách máy</a>
+        <a href="gameRent.php">Giỏ hàng</a>
+        <a href="login.php" class="login">Đăng nhập</a>
+        <a href="register.php" class="login">Đăng ký</a>
+        <div class="profile-menu">
+        <button class="profile-button" id="profileName">Tên người dùng ▼</button>
+        <div class="profile-dropdown">
+            <a href="#" id="viewProfile"><i class="fas fa-user"></i> 👤 Thông tin cá nhân</a>
+            <a href="#" id="changePassword"><i class="fas fa-lock"></i> 🔒 Đổi mật khẩu</a>
+            <a href="#" id="logoutLink"><i class="fas fa-sign-out-alt"></i> 🚪 Đăng xuất</a>
+        </div>
+        </div>
     </nav>
     <hr />
     <main>

@@ -4,52 +4,66 @@ namespace controllers;
 use services\RentalService;
 use core\Database;
 use Exception;
+use services\AuthenticationService;
 
 class RentalController
 {
     private $rentalService;
     private $db;
+    private $authService;
+
 
     public function __construct($database = null)
     {
         $this->db = $database ?? Database::getInstance();
         $this->rentalService = new RentalService($this->db);
+        $this->authService = new AuthenticationService($this->db);
     }
 
     // Tạo đơn đặt thuê máy chơi game
     public function create()
     {
         try {
+            // Kiểm tra phương thức
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 $this->sendResponse(405, false, 'Method không được hỗ trợ');
                 return;
             }
 
+            // Lấy Authorization header
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+            if (!$authHeader) {
+                $this->sendResponse(401, false, 'Token không được cung cấp');
+                return;
+            }
+
+            // Đọc dữ liệu từ request body
             $data = json_decode(file_get_contents('php://input'), true);
             if (empty($data)) {
                 $this->sendResponse(400, false, 'Dữ liệu không hợp lệ');
                 return;
             }
 
-            $requiredFields = ['user_id', 'console_id', 'rental_start', 'rental_end'];
-            foreach ($requiredFields as $field) {
-                if (empty($data[$field])) {
-                    $this->sendResponse(400, false, "Trường {$field} là bắt buộc");
-                    return;
-                }
-            }
+            // Gọi Service (đã xác thực bên trong)
+            $result = $this->rentalService->createRental($data, $authHeader);
 
-            $result = $this->rentalService->createRental($data);
             if ($result['success']) {
-                $this->sendResponse(201, true, 'Đặt thuê máy thành công', ['rental_id' => $result['data']]);
+                $this->sendResponse(201, true, 'Đặt thuê máy thành công', $result['data']);
             } else {
-                $statusCode = isset($result['errors']) ? 400 : 500;
-                $this->sendResponse($statusCode, false, $result['message'], isset($result['errors']) ? ['errors' => $result['errors']] : null);
+                $statusCode = isset($result['error']) ? 500 : 400;
+                $this->sendResponse(
+                    $statusCode,
+                    false,
+                    $result['message'],
+                    isset($result['error']) ? ['error' => $result['error']] : null
+                );
             }
         } catch (Exception $e) {
-            $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
+            $this->sendResponse(500, false, 'Lỗi hệ thống', ['error' => $e->getMessage()]);
         }
     }
+
+
 
     // Lấy danh sách các đơn thuê
     public function index()
@@ -214,5 +228,12 @@ class RentalController
 
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+    private function getAuthHeader()
+    {
+        $headers = getallheaders();
+        return isset($headers['Authorization']) ? $headers['Authorization'] : 
+               (isset($headers['authorization']) ? $headers['authorization'] : null);
     }
 }

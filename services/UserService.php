@@ -237,43 +237,57 @@
         }
 
         //laasy danh sách người dùng với phân trang
-        public function getUsers($page = 1, $limit = 10, $search = '',$authHeader = null){
+        public function getUsers($page = 1, $limit = 10, $search = '', $authHeader = null)
+        {
             try {
+                // Debug: In ra parameters
+                error_log("UserService::getUsers - Page: $page, Limit: $limit, Search: '$search'");
+
                 // Xác thực token
-               // Xác thực token
                 $authResult = $this->authService->authenticate($authHeader);
                 if (!$authResult['success']) {
+                    error_log("Authentication failed: " . print_r($authResult, true));
                     return $authResult;
                 }
                 
                 $currentUser = $authResult['user'];
+                error_log("Current user: " . print_r($currentUser, true));
                 
                 // Kiểm tra quyền truy cập danh sách
                 if (!$this->authService->canAccessPagination($currentUser['role'])) {
+                    error_log("Access denied for role: " . $currentUser['role']);
                     return [
                         'success' => false,
                         'message' => 'Bạn không có quyền truy cập danh sách người dùng'
                     ];
                 }
 
+                // Debug: Trước khi gọi database
+                error_log("About to call userModel->getAll with params: page=$page, limit=$limit, search='$search'");
 
-                $user = $this->userModel->getAll($page, $limit, $search);
+                $users = $this->userModel->getAll($page, $limit, $search);
                 $total = $this->userModel->countAll($search);
-                //xoas mật khẩu khỏi kết quả trả về
-                foreach ($user as &$u) {
+
+                error_log("Database results - Users count: " . count($users) . ", Total: $total");
+
+                // Xóa mật khẩu khỏi kết quả trả về
+                foreach ($users as &$u) {
                     unset($u['password_hash']);
                 }
 
                 return [
                     'success' => true,
-                    'users' => $user,
-                    'total' => $total,
-                    'page' => $page,
-                    'limit' => $limit
+                    'data' => [
+                        'users' => $users,
+                        'total' => $total,
+                        'page' => $page,
+                        'limit' => $limit
+                    ]
                 ];
 
-
             } catch (Exception $e) {
+                error_log("UserService::getUsers Exception: " . $e->getMessage());
+                error_log("Stack trace: " . $e->getTraceAsString());
                 return [
                     'success' => false,
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage()
@@ -297,17 +311,15 @@
         }
 
         //doi mật khẩu người dùng
-        public function changePassword($userId,$oldPassword, $newPassword,$authHeader){
-            try{
-                // Xác thực token
+       public function changePassword($userId, $oldPassword, $newPassword, $authHeader) {
+            try {
                 $authResult = $this->authService->authenticate($authHeader);
                 if (!$authResult['success']) {
                     return $authResult;
                 }
-                
+
                 $currentUser = $authResult['user'];
-                
-                // Chỉ có thể đổi mật khẩu của chính mình
+
                 if ($currentUser['user_id'] != $userId) {
                     return [
                         'success' => false,
@@ -322,7 +334,6 @@
                         'message' => 'Người dùng không tồn tại'
                     ];
                 }
-                //kiểm tra mật khẩu cũ
 
                 if (!password_verify($oldPassword, $user['password_hash'])) {
                     return [
@@ -330,56 +341,38 @@
                         'message' => 'Mật khẩu cũ không đúng'
                     ];
                 }
-                //validate mật khẩu mới
-                if(strlen($newPassword) < 6){
+
+                if (strlen($newPassword) < 6) {
                     return [
                         'success' => false,
                         'message' => 'Mật khẩu mới phải có ít nhất 6 ký tự'
                     ];
                 }
 
-                //mã hóa mật khẩu mới
                 $newPasswordHash = password_hash($newPassword, PASSWORD_BCRYPT);
-                // Cập nhật password trực tiếp trong database
-                // Giữ nguyên các thông tin khác, chỉ cập nhật password_hash
-                $updateData = [
-                    'username' => $user['username'],
-                    'email' => $user['email'], 
-                    'full_name' => $user['full_name'],
-                    'phone' => $user['phone'],
-                    'role' => $user['role'],
-                    'status' => $user['status']
-                ];
 
-                // Sử dụng method update có sẵn nhưng cần thêm password_hash
-                // Tạm thời xử lý trực tiếp SQL
-                $sql = "UPDATE users SET password_hash = :password_hash WHERE user_id = :user_id";
-                $stmt = $this->userModel->getDatabase()->prepare($sql);
-                $stmt->bindParam(':id', $userId);
-                $stmt->bindParam(':password_hash', $newPasswordHash);
-                
-                if ($stmt->execute()) {
+                $success = $this->userModel->updatePassword($userId, $newPasswordHash);
+                if ($success) {
                     return [
                         'success' => true,
                         'message' => 'Đổi mật khẩu thành công'
                     ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => 'Không thể cập nhật mật khẩu'
+                    ];
                 }
 
+            } catch (Exception $e) {
                 return [
                     'success' => false,
-                    'message' => 'Không thể cập nhật mật khẩu'
-                ];
-
-
-            }
-            catch (Exception $e) {
-                return [
-                    'success' => false,
-                    'message' => 'Đã xảy ra lỗi khi đổi mật khẩu',    
+                    'message' => 'Đã xảy ra lỗi khi đổi mật khẩu',
                     'error' => $e->getMessage()
                 ];
             }
         }
+
         
         // Lấy người dùng từ token
         public function getUserFromToken($authHeader)

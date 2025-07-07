@@ -1,4 +1,4 @@
-
+/* ==================== RESET & BASE STYLES ==================== */
 * {
     margin: 0;
     padding: 0;
@@ -6,39 +6,458 @@
     font-family: Arial, sans-serif;
 }
 
-body {
-    background-color: #f9f9f9;
-    color: #333;
-    line-height: 1.6;
+/* ==================== MENU & NAVIGATION CSS ==================== */
+
+/* CSS Variables for Menu */
+:root {
+  --primary-color: #003366;
+  --secondary-color: #00509e;
+  --accent-color: #007bff;
+  --warning-color: #ffd700;
+  --shadow: 0 2px 10px rgba(0,0,0,0.1);
+  --shadow-hover: 0 4px 15px rgba(0,0,0,0.15);
+  --border-radius: 8px;
+  --transition: all 0.3s ease;
 }
 
-
+/* ==================== HEADER SECTION ==================== */
 header {
-    background-color: #003366;
-    color: white;
-    padding: 20px;
-    text-align: center;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 20px 0;
+  text-align: center;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
+header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.6s ease;
+}
 
+header:hover::before {
+  left: 100%;
+}
+
+.logo {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
+}
+
+/* ==================== MAIN NAVIGATION BAR ==================== */
 nav {
-    background-color: #00509e;
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    padding: 12px 0;
+  background-color: var(--secondary-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
 }
 
 nav a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
 }
 
-nav a:hover {
-    text-decoration: underline;
+nav a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
+nav a:hover,
+nav a.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--warning-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+nav a:hover::before {
+  left: 100%;
+}
+
+/* ==================== PROFILE MENU DROPDOWN ==================== */
+.profile-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-button {
+  background-color: transparent;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.profile-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--warning-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.profile-button:hover::before {
+  left: 100%;
+}
+
+/* Profile Dropdown Menu */
+.profile-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  border-radius: 12px;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 1000;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideDown 0.3s ease;
+}
+
+.profile-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--secondary-color);
+}
+
+.profile-dropdown a {
+  padding: 15px 20px;
+  text-align: left;
+  display: block;
+  color: white;
+  font-weight: normal;
+  text-decoration: none;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-dropdown a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.profile-dropdown a:hover {
+  background-color: rgba(255,255,255,0.2);
+  color: var(--warning-color);
+  transform: translateX(5px);
+}
+
+.profile-dropdown a:hover::before {
+  left: 100%;
+}
+
+.profile-menu:hover .profile-dropdown {
+  display: flex;
+}
+
+/* ==================== MOBILE MENU (HAMBURGER) ==================== */
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.mobile-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.mobile-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  animation: slideDown 0.3s ease;
+}
+
+.mobile-menu a {
+  display: block;
+  padding: 15px 20px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-menu a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.mobile-menu a:hover {
+  background-color: rgba(255,255,255,0.2);
+  color: var(--warning-color);
+  transform: translateX(10px);
+}
+
+.mobile-menu a:hover::before {
+  left: 100%;
+}
+
+.mobile-menu a:last-child {
+  border-bottom: none;
+}
+
+/* ==================== BREADCRUMB NAVIGATION ==================== */
+.breadcrumb {
+  background-color: #f8f9fa;
+  padding: 15px 20px;
+  border-radius: var(--border-radius);
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.breadcrumb a {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.breadcrumb a:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.breadcrumb span {
+  color: #6c757d;
+  margin: 0 8px;
+}
+
+.breadcrumb .current {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* ==================== SEARCH BAR IN NAVIGATION ==================== */
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.nav-search input {
+  padding: 8px 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: var(--border-radius);
+  background-color: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 14px;
+  transition: var(--transition);
+  width: 200px;
+}
+
+.nav-search input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+.nav-search input:focus {
+  outline: none;
+  border-color: var(--warning-color);
+  background-color: rgba(255,255,255,0.2);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
+}
+
+.nav-search button {
+  background: linear-gradient(135deg, var(--accent-color), #0056b3);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: bold;
+}
+
+.nav-search button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+  
+  .mobile-menu-toggle {
+    display: block;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+  }
+  
+  .nav-links {
+    display: none;
+    width: 100%;
+  }
+  
+  .nav-links.active {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .nav-links.active .mobile-menu {
+    display: block;
+  }
+  
+  nav a {
+    padding: 12px 20px;
+    margin: 0;
+    width: 100%;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .profile-menu {
+    width: 100%;
+  }
+  
+  .profile-dropdown {
+    position: static;
+    width: 100%;
+    min-width: auto;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+  }
+  
+  .profile-dropdown::before {
+    display: none;
+  }
+  
+  .nav-search {
+    margin: 10px 20px;
+    margin-left: 20px;
+  }
+  
+  .nav-search input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    font-size: 24px;
+  }
+  
+  header {
+    padding: 15px 0;
+  }
+  
+  nav {
+    padding: 8px 0;
+  }
+  
+  .nav-search input {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  .nav-search button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ==================== HERO SECTION ==================== */
 .hero {
     width: 100%;
     max-height: 300px;
@@ -51,6 +470,7 @@ nav a:hover {
     object-fit: cover;
 }
 
+/* ==================== MAIN CONTENT ==================== */
 main {
     padding: 30px 10%;
     background-color: #ffffff;
@@ -66,27 +486,42 @@ main {
     margin-bottom: 10px;
 }
 
+.intro img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
 .featured-products h2 {
     margin-bottom: 20px;
     color: #003366;
     text-align: center;
 }
 
+/* ==================== PRODUCT GRID ==================== */
 .product-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+    justify-items: center;
+    padding: 20px 0;
 }
 
 .product-card {
     background-color: #f1f1f1;
     border-radius: 10px;
-    padding: 15px;
+    padding: 20px;
     text-align: center;
-    width: 250px;
+    width: 100%;
+    max-width: 300px;
+    min-height: 400px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .product-card:hover {
@@ -95,35 +530,48 @@ main {
 
 .product-card img {
     width: 100%;
-    height: auto;
+    height: 200px;
+    object-fit: cover;
     border-radius: 8px;
+    margin-bottom: 15px;
 }
 
 .product-card h4 {
     margin: 10px 0;
     color: #00509e;
+    font-size: 18px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
 }
 
-.product-card a {
+.product-card p {
+    color: red;
+    font-weight: bold;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.product-card button {
     display: inline-block;
     margin-top: 10px;
     background-color: #00509e;
     color: white;
-    padding: 8px 15px;
-    text-decoration: none;
+    padding: 10px 20px;
+    border: none;
     border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
 }
 
-.product-card a:hover {
+.product-card button:hover {
     background-color: #003f7f;
 }
 
-.product-card p {
-    color:red;
-    font-weight: bold;
-}
-
-
+/* ==================== WHY CHOOSE SECTION ==================== */
 .why-choose {
     margin-top: 50px;
     background-color: #e0f2ff;
@@ -148,11 +596,286 @@ main {
     font-size: 16px;
 }
 
-
+/* ==================== FOOTER ==================== */
 footer {
     background-color: #003366;
     color: white;
     text-align: center;
     padding: 15px;
     margin-top: 30px;
+}
+
+/* ==================== LOADING OVERLAY ==================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 18px;
+    z-index: 9999;
+}
+
+/* ==================== NOTIFICATION SYSTEM ==================== */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+}
+
+.notification {
+    padding: 12px 20px;
+    margin: 5px 0;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    transition: opacity 0.3s ease;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.notification.fade-out {
+    animation: slideOutRight 0.3s ease-in;
+}
+
+.notification.success {
+    background: #28a745;
+}
+
+.notification.error {
+    background: #dc3545;
+}
+
+.notification.info {
+    background: #17a2b8;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px;
+    font-size: 16px;
+}
+
+/* ==================== MODAL SYSTEM ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    color: #003366;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content input {
+    width: 100%;
+    margin: 5px 0;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-content button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.modal-content button:hover {
+    background: #0056b3;
+}
+
+/* ==================== GAME DETAIL MODAL ==================== */
+.game-modal {
+    display: flex;
+    min-height: 400px;
+    gap: 0;
+}
+
+.game-modal-left {
+    flex: 1;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-modal-left img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.game-modal-right {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.game-modal-right h2 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.game-modal-right p {
+    margin: 12px 0;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #34495e;
+}
+
+.game-modal-right strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.modal-actions {
+    margin-top: 25px;
+    text-align: center;
+}
+
+.rent-now-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.rent-now-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+    background: linear-gradient(135deg, #2980b9, #1f639a);
+}
+
+.rent-now-btn:active {
+    transform: translateY(0);
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 1024px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    nav {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 0;
+    }
+    
+    main {
+        padding: 20px 5%;
+    }
+    
+    .game-modal {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .game-modal-left {
+        border-radius: 12px 12px 0 0;
+        padding: 20px;
+    }
+    
+    .game-modal-right {
+        padding: 20px;
+    }
+    
+    .game-modal-right h2 {
+        font-size: 20px;
+    }
+    
+    .game-modal-right p {
+        font-size: 14px;
+    }
 }

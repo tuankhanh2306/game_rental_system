@@ -14,38 +14,40 @@ class GameController{
     }
     
     // Hiển thị danh sách máy chơi game
-    public function index(){
-        try{
+    public function index()
+    {
+        try {
             if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
                 $this->sendResponse(405, false, 'Method không được hỗ trợ');
                 return;
             }
-            
-            $params = [
-                'page' => isset($_GET['page']) ? (int)$_GET['page'] : 1,
-                'limit' => isset($_GET['limit']) ? (int)$_GET['limit'] : 12,
-                'type' => isset($_GET['type']) ? $_GET['type'] : '',
-                'search' => isset($_GET['search']) ? $_GET['search'] : '',
-                'available_only' => isset($_GET['available_only']) ? filter_var($_GET['available_only'], FILTER_VALIDATE_BOOLEAN) : true
-            ];
-            
-            // Validate query parameters
-            $params['page'] = max(1, $params['page']);
-            $params['limit'] = max(1, min(100, $params['limit'])); // Giới hạn tối đa là 100
 
-            $result = $this->gameService->getConsoleList($params);
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+            $type = isset($_GET['type']) ? trim($_GET['type']) : '';
+            $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+            $result = $this->gameService->getConsoleList($page, $limit, $type, $search, false);
+
             if ($result['success']) {
-                $this->sendResponse(200, true, $result['message'], $result['data']);
+                $this->sendResponse(200, true, 'Lấy danh sách thành công', [
+                    'consoles' => $result['data'],
+                    'pagination' => [
+                        'total' => (int)$result['total'],
+                        'page' => (int)$result['page'],
+                        'limit' => (int)$result['limit'],
+                        'total_pages' => (int)ceil($result['total'] / $result['limit'])
+                    ]
+                ]);
+            } else {
+                $statusCode = strpos($result['message'], 'quyền') !== false ? 403 : 400;
+                $this->sendResponse($statusCode, false, $result['message']);
             }
-            else {
-                $this->sendResponse(500, false, $result['message']);
-            }
-
-        }
-        catch(Exception $e){
-            $this->sendResponse(500, false, 'Lỗi hệ thống ' . $e->getMessage());
+        } catch (Exception $e) {
+            $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
     }
+
     
     // Tạo máy chơi game mới
     public function create(){

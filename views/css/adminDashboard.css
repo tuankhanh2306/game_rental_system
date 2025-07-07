@@ -466,7 +466,7 @@ tr:hover {
     border-radius: 10px;
     color: white;
     font-weight: 500;
-    transform: translateX(400px);
+    transform: translateX(800px);
     transition: transform 0.3s ease;
 }
 

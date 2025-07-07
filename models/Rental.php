@@ -291,7 +291,7 @@ class Rental
     // Lấy thống kê đơn thuê theo trạng thái
     public function getStatusStats()
     {
-        $sql = "SELECT status, COUNT(*) as count FROM {$this->table} GROUP BY status";
+        $sql = "SELECT status, COUNT(*) as total_count FROM rentals GROUP BY status";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

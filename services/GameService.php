@@ -60,52 +60,39 @@ class GameService
     }
 
     // Lấy máy chơi game có phân trang
-    public function getConsoleList($param=[])
+    public function getConsoleList($page = 1, $limit = 12, $type = '', $search = '', $availableOnly = false)
     {
         try {
-            $page = max(1, intval($param['page'] ?? 1));
-            $limit = max(1, intval($param['limit'] ?? 12));
-            $type = $param['type'] ?? '';
-            $search = $param['search'] ?? '';
-            $availableOnly = $param['available_only'] ?? true;
-
-            // Lấy dữ liệu máy chơi game
-            if($availableOnly){
-                $consoleData = $this->gameModel->getAvailable($page, $limit, $type, $search);
-                $totalCount = $this->gameModel->count($search, true);
-            }
-            else{
-                $consoleData = $this->gameModel->getAll($page, $limit, $type, $search);
-                $totalCount = $this->gameModel->count($search, false);
-            }
             
-            // Xử lí dữ liệu máy chơi game
-            $processedConsoles = array_map([$this, 'processGameData'], $consoleData);
 
-            // Tính toán phân trang
-            $totalPages = ceil($totalCount / $limit);
+            // Lấy dữ liệu máy
+            if ($availableOnly) {
+                $consoleData = $this->gameModel->getAvailable($page, $limit, $type, $search);
+                $totalCount = $this->gameModel->count($type, $search, true);
+            } else {
+                $consoleData = $this->gameModel->getAll($page, $limit, $type, $search);
+                $totalCount = $this->gameModel->count($type, $search, false);
+            }
+
+            // Xử lý dữ liệu
+            $processedConsoles = array_map([$this, 'processGameData'], $consoleData);
 
             return [
                 'success' => true,
-                'data' => [
-                    'consoles' => $processedConsoles,
-                    'total_count' => $totalCount,
-                    'current_page' => $page,
-                    'total_pages' => $totalPages,
-                    'limit' => $limit,
-                    'has_next' => $page < $totalPages,
-                    'has_prev' => $page > 1
-                ],
-                'message' => 'Danh sách máy chơi game đã được lấy thành công.'
+                'data' => $processedConsoles,
+                'total' => $totalCount,
+                'page' => $page,
+                'limit' => $limit
             ];
 
         } catch (Exception $e) {
             return [
-                'success' => false, 
+                'success' => false,
                 'message' => 'Lỗi khi lấy danh sách máy chơi game: ' . $e->getMessage()
             ];
         }
     }
+
 
     // Lấy thông tin chi tiết máy chơi game
     public function getConsoleDetail($id)
@@ -304,38 +291,32 @@ class GameService
         }
     }
 
-    // Lấy thống kê máy chơi game
     public function getConsoleStats()
     {
         try {
-            // Lấy thống kê máy chơi game
             $statusStats = $this->gameModel->getStatusStats();
 
+            // Khởi tạo dữ liệu tổng
             $stats = [
-                'total' => 0,      
-                'available' => 0,
-                'rented' => 0,
-                'maintenance' => 0,
+                'total_consoles' => 0,
+                'total_quantity' => 0,
+                'total_available' => 0,
                 'status_breakdown' => []
             ];
 
-            foreach ($statusStats as $status){
-                $stats['total'] += $status['count'];
-                $stats['status_breakdown'][$status['status']] = $status['count'];
-                
-                switch ($status['status']) {
-                    case 'available':
-                        $stats['available'] = $status['count'];
-                        break;
-                    case 'rented':
-                        $stats['rented'] = $status['count'];
-                        break;
-                    case 'maintenance':
-                        $stats['maintenance'] = $status['count'];
-                        break;
-                    default:
-                        break;
-                }
+            foreach ($statusStats as $status) {
+                // Tính tổng số loại máy (tổng số dòng)
+                $stats['total_consoles'] += $status['total_count'];
+                // Cộng tổng số máy và số máy còn lại
+                $stats['total_quantity'] += $status['total_quantity'];
+                $stats['total_available'] += $status['total_available'];
+
+                // Lưu chi tiết theo status
+                $stats['status_breakdown'][$status['status']] = [
+                    'count' => $status['total_count'],
+                    'total_quantity' => $status['total_quantity'],
+                    'total_available' => $status['total_available']
+                ];
             }
 
             return [
@@ -345,11 +326,12 @@ class GameService
             ];
         } catch (Exception $e) {
             return [
-                'success' => false, 
+                'success' => false,
                 'message' => 'Lỗi khi lấy thống kê máy chơi game: ' . $e->getMessage()
             ];
-        }
+        }   
     }
+
 
     // Lấy console phổ biến
     public function getPopularConsoles($limit = 5)

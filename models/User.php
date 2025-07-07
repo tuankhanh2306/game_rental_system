@@ -1,6 +1,9 @@
 <?php
 namespace models;
 
+use Exception;
+use PDO;
+
 class User
 {
     private $db;
@@ -85,25 +88,32 @@ class User
     }
     
     //cập nhật thông tin người dùng
-    public function update($id, $data){
-        $sql = "UPDATE " . $this->table . 
-                " SET username = :username,
-                    email = :email,
-                    full_name = :full_name,
-                    phone = :phone,
-                    role = :role,
-                    status = :status
-                WHERE user_id = :user_id";
+    public function update($id, $data) {
+        if (empty($data)) {
+            throw new Exception("Không có dữ liệu để cập nhật.");
+        }
+
+        $fields = [];
+        $params = [];
+
+        foreach ($data as $key => $value) {
+            $fields[] = "$key = :$key";
+            $params[":$key"] = $value;
+        }
+
+        $sql = "UPDATE {$this->table} SET " . implode(", ", $fields) . " WHERE user_id = :user_id";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':user_id', $id);
-        $stmt->bindParam(':username', $data['username']);
-        $stmt->bindParam(':email', $data['email']);
-        $stmt->bindParam(':full_name', $data['full_name']);
-        $stmt->bindParam(':phone', $data['phone']);
-        $stmt->bindParam(':role', $data['role']);
-        $stmt->bindParam(':status', $data['status']);
+
+        // Bind tất cả trường động
+        foreach ($params as $param => $value) {
+            $stmt->bindValue($param, $value);
+        }
+        // Bind user_id
+        $stmt->bindValue(':user_id', $id);
+
         return $stmt->execute();
     }
+
     
     // Lấy kết nối cơ sở dữ liệu
     public function getDatabase() {
@@ -112,7 +122,7 @@ class User
     
     //cập nhật mật khẩu người dùng
     public function updatePassword($id, $passwordHash) {
-        $sql = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE user_id = :id";
+        $sql = "UPDATE " . $this->table . " SET password_hash = :password_hash WHERE user_id = :user_id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $id);
         $stmt->bindParam(':password_hash', $passwordHash);
@@ -128,50 +138,55 @@ class User
     }
     
     //lấy danh sách người dùng với phân trang
-    public function getAll($page = 1, $limit = 10, $search = ''){
+    public function getAll($page = 1, $limit = 10, $search = '')
+    {
         $offset = ($page - 1) * $limit;
-        $whereClause = "WHERE status != 'deleted' ";
         $params = [];
-        
-        if(!empty($search)){
-            $whereClause .= " AND (username LIKE :search OR email LIKE :search OR full_name LIKE :search)";
-            $params[':search'] = '%' . $search . '%';
+
+        $sql = "SELECT * FROM users";
+
+        if (!empty($search)) {
+            $sql .= " WHERE username LIKE ? OR email LIKE ? OR full_name LIKE ?";
+            $searchParam = '%' . $search . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $searchParam;
         }
-        
-        $sql = "SELECT user_id, username, email, full_name, phone, role, status, created_at, updated_at
-                FROM " . $this->table . " " . $whereClause . 
-                " ORDER BY created_at DESC
-                LIMIT :limit OFFSET :offset";
+
+        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':limit', $limit, \PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, \PDO::PARAM_INT);
-        
-        foreach($params as $key => $value){
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-    //Đếm tổng số người dùng
-    public function countAll($search = ''){
-        $whereClause = "WHERE status != 'deleted' ";
+
+
+
+    // Fixed countAll method
+    public function countAll($search = '')
+    {
+        $sql = "SELECT COUNT(*) FROM users";
         $params = [];
-        
-        if(!empty($search)){
-            $whereClause .= " AND (username LIKE :search OR email LIKE :search OR full_name LIKE :search)";
-            $params[':search'] = '%' . $search . '%';
+
+        if (!empty($search)) {
+            $sql .= " WHERE username LIKE ? OR email LIKE ? OR full_name LIKE ?";
+            $searchParam = '%' . $search . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $searchParam;
         }
-        
-        $sql = "SELECT COUNT(*) FROM " . $this->table . " " . $whereClause;
+
         $stmt = $this->db->prepare($sql);
-        
-        foreach($params as $key => $value){
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        return $stmt->fetchColumn();
+        $stmt->execute($params);
+
+        return (int)$stmt->fetchColumn();
     }
+
+
+
     
     //xóa mềm người dùng
     public function softDelete($id){

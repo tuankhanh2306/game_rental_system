@@ -112,6 +112,9 @@
                 <div class="search-filter-bar">
                     <div class="search-box">
                         <input type="text" class="form-control" placeholder="Tìm kiếm người dùng..." id="userSearch">
+                        <button class="btn btn-secondary" onclick="loadUsersData()">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
                     </div>
                 </div>
 
@@ -120,6 +123,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Tên đăng nhập</th>
                                 <th>Tên người dùng</th>
                                 <th>Email</th>
                                 <th>Vai trò</th>
@@ -130,6 +134,11 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                    <div class="pagination" style="text-align:center; margin-top:1rem;">
+                        <button id="prevPageBtn" class="btn btn-secondary">Trang trước</button>
+                        <span id="currentPageDisplay">Trang 1</span>
+                        <button id="nextPageBtn" class="btn btn-secondary">Trang sau</button>
+                    </div>
                 </div>
             </div>
 
@@ -139,22 +148,19 @@
                     <h2 class="section-title">Quản lý máy chơi game</h2>
                     <button class="btn btn-primary" onclick="openModal('gameModal')">
                         <i class="fas fa-plus"></i> Thêm máy mới
+
                     </button>
                 </div>
                 
                 <div class="search-filter-bar">
                     <div class="search-box">
                         <input type="text" class="form-control" placeholder="Tìm kiếm máy chơi game..." id="gameSearch">
+                        
                     </div>
                     <div class="filter-group">
-                        <label>Loại:</label>
-                        <select class="form-control" id="gameTypeFilter">
-                            <option value="">Tất cả</option>
-                            <option value="PS5">PS5</option>
-                            <option value="Xbox">Xbox</option>
-                            <option value="Nintendo">Nintendo</option>
-                            <option value="PC">PC</option>
-                        </select>
+                        <button class="btn btn-secondary" onclick="loadGamesData()">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
                     </div>
                 </div>
 
@@ -202,21 +208,25 @@
                 </div>
 
                 <div class="table-container">
-                    <table id="rentalsTable">
+                    <table id="rentalsTable" class="table table-striped">
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Tên máy</th>
                                 <th>Người thuê</th>
-                                <th>Máy chơi game</th>
                                 <th>Thời gian bắt đầu</th>
                                 <th>Thời gian kết thúc</th>
+                                <th>Tổng giờ</th>
                                 <th>Tổng tiền</th>
                                 <th>Trạng thái</th>
-                                <th>Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody>
+                            <!-- Dữ liệu sẽ được đổ vào đây -->
+                        </tbody>
                     </table>
+                    <p id="currentRentalPageDisplay">Trang 1</p>
+
                 </div>
             </div>
 
@@ -275,16 +285,16 @@
             <form id="userForm">
                 <input type="hidden" id="userId">
                 <div class="form-group">
-                    <label>Tên người dùng</label>
+                    <label>Tên đăng nhập</label>
                     <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Tên Người dùng</label>
+                    <input type="text" class="form-control" id="fullName" required>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" class="form-control" id="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Mật khẩu</label>
-                    <input type="password" class="form-control" id="password">
                 </div>
                 <div class="form-group">
                     <label>Số điện thoại</label>
@@ -295,6 +305,13 @@
                     <select class="form-control" id="role" required>
                         <option value="user">Người dùng</option>
                         <option value="admin">Quản trị viên</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Trạng thái</label>
+                    <select class="form-control" id="role" required>
+                        <option value="acive">Hoạt động</option>
+                        <option value="inactive">Khóa</option>
                     </select>
                 </div>
                 <div style="text-align: right; margin-top: 2rem;">

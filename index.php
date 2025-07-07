@@ -123,7 +123,7 @@ try {
                     sendErrorResponse(405, "Method not allowed");
             }
             break;
-           
+        
 
         // Game console routes 
         case (( $path === '/gameConsoles/index') && $method === 'GET'):
@@ -155,6 +155,11 @@ try {
             }
             break;
 
+        case ($path === '/gameConsoles/stats' && $method === 'GET'):
+            $controller = new GameController($database);
+            $controller->getStats();
+            break;
+        
         // CartItem routes 
         
         // Rentals routes
@@ -239,9 +244,11 @@ try {
                     "GET /gameConsoles/index",
                     "POST /gameConsoles/create",
                     "GET|PUT|DELETE /gameConsoles/{id}",
+                    "GET /gameConsoles/stats (admin)",
                     "GET|POST /rentals",
                     "GET /rentals/stats",
                     "GET /rentals/upcoming",
+                    "GET /rentals/stats (admin)",
                     "GET /rental-history",
                     "GET /rental-history/recent"
                 ]
