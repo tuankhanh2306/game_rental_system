@@ -440,6 +440,23 @@ tr:hover {
     text-align: center;
     padding: 2rem;
 }
+.btn-logout {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 1rem;
+    transition: background-color 0.3s ease;
+}
+.btn-logout:hover {
+    background-color: #c82333;
+}
 
 .spinner {
     border: 4px solid #f3f3f3;

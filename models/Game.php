@@ -13,25 +13,45 @@ class Game{
     }
 
     //Tạo máy chơi game mới
-    public function create($data){
-        $sql = "INSERT INTO {$this->table} (console_name, console_type, description, image_url, rental_price_per_hour, quantity, available_quantity, status)
-             VALUES (:console_name, :console_type, :description, :image_url, :rental_price_per_hour, :quantity, :available_quantity, :status)";
+   public function create($data) {
+        $sql = "INSERT INTO {$this->table} (
+                    console_name,
+                    console_type,
+                    description,
+                    image_url,
+                    rental_price_per_hour,
+                    quantity,
+                    available_quantity,
+                    status
+                )
+                VALUES (
+                    :console_name,
+                    :console_type,
+                    :description,
+                    :image_url,
+                    :rental_price_per_hour,
+                    :quantity,
+                    :available_quantity,
+                    :status
+                )";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':console_name', $data['console_name']);
-        $stmt->bindParam(':console_type', $data['console_type']);
-        $stmt->bindParam(':description', $data['description']);
-        $stmt->bindParam(':image_url', $data['image_url']);
-        $stmt->bindParam(':rental_price_per_hour', $data['rental_price_per_hour']);
-        $stmt->bindParam(':quantity', $data['quantity'] ?? 1);
-        $stmt->bindParam(':available_quantity', $data['available_quantity'] ?? $data['quantity'] ?? 1);
-        $stmt->bindParam(':status', $data['status'] ?? 'available');
-        
-        if($stmt->execute()){
+
+        $stmt->bindValue(':console_name', $data['console_name']);
+        $stmt->bindValue(':console_type', $data['console_type']);
+        $stmt->bindValue(':description', $data['description']);
+        $stmt->bindValue(':image_url', $data['image_url']);
+        $stmt->bindValue(':rental_price_per_hour', $data['rental_price_per_hour']);
+        $stmt->bindValue(':quantity', $data['quantity'] ?? 1, PDO::PARAM_INT);
+        $stmt->bindValue(':available_quantity', $data['available_quantity'] ?? ($data['quantity'] ?? 1), PDO::PARAM_INT);
+        $stmt->bindValue(':status', $data['status'] ?? 'available');
+
+        if ($stmt->execute()) {
             return $this->db->lastInsertId();
         } else {
             return false;
         }
     }
+
 
     //tìm máy theo id
     public function findById($id){

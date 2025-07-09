@@ -50,7 +50,7 @@
         <div class="total-amount">
           Tổng cộng: <span id="total-price">235,000 VND</span>
         </div>
-        <a href="thanhtoan.html" class="checkout-btn">Tiến hành thanh toán</a>
+        <a href="checkout.php" class="checkout-btn">Tiến hành thanh toán</a>
       </div>
     </div>
   </main>

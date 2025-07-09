@@ -27,9 +27,7 @@
                 <li><a href="#" class="nav-link" data-section="rentals">
                     <i class="fas fa-calendar-alt"></i> Đơn thuê
                 </a></li>
-                <li><a href="#" class="nav-link" data-section="history">
-                    <i class="fas fa-history"></i> Lịch sử
-                </a></li>
+                
             </ul>
         </nav>
 
@@ -47,6 +45,9 @@
                         <div><strong>Admin</strong></div>
                         <div style="font-size: 0.9rem; color: #666;">Quản trị viên</div>
                     </div>
+                    <button class="btn-logout" onclick="logout()"> 
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
                 </div>
             </div>
 
@@ -179,6 +180,11 @@
                         </thead>
                         <tbody></tbody>
                     </table>
+                    <div class="pagination" style="text-align:center; margin-top:1rem;">
+                        <button id="prevPageBtnGame" class="btn btn-secondary">Trang trước</button>
+                        <span id="currentPageDisplayGame">Trang 1</span>
+                        <button id="nextPageBtnGame" class="btn btn-secondary">Trang sau</button>
+                    </div>
                 </div>
             </div>
 
@@ -230,48 +236,7 @@
                 </div>
             </div>
 
-            <!-- History Section -->
-            <div id="history" class="content-section">
-                <div class="section-header">
-                    <h2 class="section-title">Lịch sử hoạt động</h2>
-                </div>
-                
-                <div class="search-filter-bar">
-                    <div class="filter-group">
-                        <label>Hành động:</label>
-                        <select class="form-control" id="historyActionFilter">
-                            <option value="">Tất cả</option>
-                            <option value="create">Tạo mới</option>
-                            <option value="update">Cập nhật</option>
-                            <option value="delete">Xóa</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Từ ngày:</label>
-                        <input type="date" class="form-control" id="historyFromDate">
-                    </div>
-                    <div class="filter-group">
-                        <label>Đến ngày:</label>
-                        <input type="date" class="form-control" id="historyToDate">
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table id="historyTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Đơn thuê</th>
-                                <th>Hành động</th>
-                                <th>Người thực hiện</th>
-                                <th>Thời gian</th>
-                                <th>Ghi chú</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
+            
         </main>
     </div>
 
@@ -339,12 +304,19 @@
                     <label>Loại máy</label>
                     <select class="form-control" id="consoleType" required>
                         <option value="">Chọn loại máy</option>
-                        <option value="PS5">PlayStation 5</option>
-                        <option value="Xbox">Xbox Series X/S</option>
-                        <option value="Nintendo">Nintendo Switch</option>
-                        <option value="PC">PC Gaming</option>
+                        <option value="Sony PlayStation">PlayStation </option>
+                        <option value="Console Handheld">Console Handheld</option>
+                        <option value="PC Handheld">PC Handheld (Windows Gaming Handheld) </option>
+                        <option value="Home Console">Home Console (Microsoft Console, Digital Only)</option>
+                        <option value="Console Hybrid">Console Hybrid</option>
+                        <option value="Android Handheld">Android Handheld</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Hình ảnh</label>
+                    <input type="file" class="form-control" id="imageFile" accept="image/*">
+                </div>
+
                 <div class="form-group">
                     <label>Giá thuê/giờ (VNĐ)</label>
                     <input type="number" class="form-control" id="rentalPrice" required min="0">
@@ -358,10 +330,20 @@
                         <option value="inactive">Không hoạt động</option>
                     </select>
                 </div>
+                
                 <div class="form-group">
                     <label>Mô tả</label>
                     <textarea class="form-control" id="description" rows="3"></textarea>
                 </div>
+                <div class="form-group">
+                    <label>Số lượng tồn kho</label>
+                    <input type="number" class="form-control" id="quantity" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Số lượng còn sẵn sàng</label>
+                    <input type="number" class="form-control" id="availableQuantity" min="0" required>
+                </div>
+
                 <div style="text-align: right; margin-top: 2rem;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('gameModal')">Hủy</button>
                     <button type="submit" class="btn btn-primary">Lưu</button>

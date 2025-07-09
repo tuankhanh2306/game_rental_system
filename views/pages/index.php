@@ -28,10 +28,10 @@
 
 
 
-
+<!-- 
   <div class="intro">
-    <img src="../img/index.png" alt="Banner trang chu"/>
-  </div>
+    <img src="../img/hình ảnh trang chủ.png" alt="Banner trang chu"/>
+  </div> -->
 
   <main>
     <section class="intro">

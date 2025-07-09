@@ -2,28 +2,53 @@
 // Admin Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin Dashboard loaded');
-    
+    const role = localStorage.getItem('role');
+    if (!role || role !== 'admin') {
+        alert('Bạn không có quyền truy cập vào trang này.');
+        localStorage.removeItem('token');
+        window.location.href = 'login.php';
+        return;
+    }
+    if (!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
     // Khởi tạo navigation
     initNavigation();
-    
+
     // Load dashboard mặc định
     showSection('dashboard');
+    
 });
+
 document.getElementById('userForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     submitUserForm();
 });
-
+///user
 
 document.getElementById('prevPageBtn').addEventListener('click', () => {
     if (currentPage > 1) {
         loadUsersData(currentPage - 1);
     }
 });
-
 document.getElementById('nextPageBtn').addEventListener('click', () => {
     loadUsersData(currentPage + 1);
 });
+//game
+
+document.getElementById('nextPageBtnGame').addEventListener('click', () => {
+    loadGamesData(currentGamePage + 1);
+});
+document.getElementById('prevPageBtnGame').addEventListener('click', () => {
+    if (currentGamePage > 1) {
+        loadGamesData(currentGamePage - 1);
+    }
+});
+
+
+
 
 async function submitUserForm() {
     const userId = document.getElementById('userId').value.trim();
@@ -87,6 +112,212 @@ async function submitUserForm() {
         showLoading(false);
     }
 }
+
+async function submitGameForm() {
+    const formData = new FormData();
+
+    formData.append('console_name', document.getElementById('consoleName').value.trim());
+    formData.append('console_type', document.getElementById('consoleType').value.trim());
+    formData.append('rental_price_per_hour', parseInt(document.getElementById('rentalPrice').value));
+    formData.append('status', document.getElementById('gameStatus').value);
+    formData.append('description', document.getElementById('description').value.trim());
+    formData.append('quantity', parseInt(document.getElementById('quantity').value));
+    formData.append('available_quantity', parseInt(document.getElementById('availableQuantity').value));
+
+    const imageFileInput = document.getElementById('imageFile');
+    if (imageFileInput.files.length > 0) {
+        formData.append('image', imageFileInput.files[0]);
+    }
+
+    // Lấy gameId để xác định Thêm mới hay Cập nhật
+    const gameId = document.getElementById('gameId').value;
+
+    // URL và method tùy theo trạng thái
+    const isUpdate = !!gameId;
+    const url = isUpdate
+        ? `/game_rental_system/gameConsoles/${gameId}`
+        : `/game_rental_system/gameConsoles/create`;
+    const method = 'POST'; // Luôn POST
+
+    if (isUpdate) {
+        formData.append('_method', 'PUT');
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch(
+            url,
+            {
+                method: 'POST', // Luôn POST
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                },
+                body: formData
+            }
+        );
+
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification(
+                isUpdate ? 'Cập nhật máy chơi game thành công' : 'Thêm máy chơi game thành công',
+                'success'
+            );
+            closeModal('gameModal');
+            loadGamesData();
+        } else {
+            throw new Error(result.message || 'Thao tác thất bại');
+        }
+
+    } catch (error) {
+        console.error('Lỗi khi xử lý máy chơi game:', error);
+        showNotification('Lỗi: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+
+function fillGameForm(game) {
+    document.getElementById('gameId').value = game.id || '';
+    document.getElementById('consoleName').value = game.console_name || '';
+    document.getElementById('consoleType').value = game.console_type || '';
+    document.getElementById('rentalPrice').value = game.rental_price_per_hour || 0;
+    document.getElementById('gameStatus').value = game.status || 'available';
+    document.getElementById('description').value = game.description || '';
+    
+    // Nếu bạn có thêm hình ảnh
+    if (document.getElementById('imageUrl')) {
+        document.getElementById('imageUrl').value = game.image_url || '';
+    }
+    
+    if (document.getElementById('quantity')) {
+        document.getElementById('quantity').value = game.quantity || 0;
+    }
+    if (document.getElementById('availableQuantity')) {
+        document.getElementById('availableQuantity').value = game.available_quantity || 0;
+    }
+}
+
+
+
+async function editGame(gameId) {
+    showLoading(true);
+    try {
+        const response = await fetch(`/game_rental_system/gameConsoles/${gameId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            fillGameForm(data.data);
+            document.getElementById('gameModalTitle').textContent = 'Chỉnh sửa máy chơi game';
+            openModal('gameModal');
+        } else {
+            throw new Error(data.message || 'Lỗi khi tải thông tin máy chơi game');
+        }
+    } catch (error) {
+        console.error('Error loading game for edit:', error);
+        showNotification('Lỗi khi tải thông tin máy: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function viewGame(gameId) {
+    showLoading(true);
+    try {
+        const response = await fetch(`/game_rental_system/gameConsoles/${gameId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            const game = data.data;
+            alert(`Thông tin máy:\nID: ${game.id}\nTên: ${game.console_name}\nLoại: ${game.console_type}\nGiá/giờ: ${formatCurrency(game.rental_price_per_hour)}\nTrạng thái: ${game.status}\nMô tả: ${game.description}`);
+        } else {
+            throw new Error(data.message || 'Lỗi khi tải thông tin máy chơi game');
+        }
+    } catch (error) {
+        console.error('Error loading game details:', error);
+        showNotification('Lỗi khi tải thông tin máy: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+
+async function deleteGame(gameId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa máy chơi game này?')) {
+        return;
+    }
+
+    showLoading(true);
+    try {
+        const response = await fetch(`/game_rental_system/gameConsoles/${gameId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Xóa máy chơi game thành công', 'success');
+            loadGamesData();
+        } else {
+            throw new Error(data.message || 'Lỗi khi xóa máy chơi game');
+        }
+    } catch (error) {
+        console.error('Error deleting game:', error);
+        showNotification('Lỗi khi xóa máy: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+
+function openAddGameModal() {
+    document.getElementById('gameModalTitle').textContent = 'Thêm máy chơi game mới';
+    document.getElementById('gameForm').reset();
+    document.getElementById('gameId').value = '';
+    openModal('gameModal');
+}
+
+
+document.getElementById('gameForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitGameForm();
+});
+
 
 
 /**
@@ -163,7 +394,32 @@ function loadSectionData(sectionName) {
     }
 }
 
+
+async function loadTotalRevenue() {
+    try {
+        const response = await fetch('/api/rentals/total-revenue');
+        const result = await response.json();
+        if (result.success) {
+            const revenue = result.data.totalRevenue || 0;
+            const formatted = revenue.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('totalRevenue').textContent = formatted;
+        } else {
+            console.warn('Không lấy được tổng doanh thu:', result.message);
+            document.getElementById('totalRevenue').textContent = '0 đ';
+        }
+    } catch (error) {
+        console.error('Lỗi khi gọi API tổng doanh thu:', error);
+        document.getElementById('totalRevenue').textContent = '0 đ';
+    }
+}
+
+
 async function loadUserStats() {
+    if(!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
     try {
         const response = await fetch('/game_rental_system/users/stats', {
             method: 'GET',
@@ -207,6 +463,11 @@ async function loadUserStats() {
 }
 
 async function loadGameStats() {
+    if(!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
     try {
         const response = await fetch('/game_rental_system/gameConsoles/stats', {
             method: 'GET',
@@ -242,44 +503,46 @@ async function loadGameStats() {
 
 
 async function loadRentalStats() {
+    if(!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
+    const response = await fetch('/game_rental_system/rentals/stats', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const rawText = await response.text();
+
+    let result;
     try {
-        const response = await fetch('/game_rental_system/rentals/stats', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-            }
-        });
+        result = JSON.parse(rawText);
+    } catch(parseError) {
+        throw new Error('Server trả về dữ liệu không phải JSON. Có thể là lỗi PHP hoặc chưa đăng nhập.');
+    }
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    if (result.success) {
+        // Lấy tổng rentals và revenue
+        const totalRentals = result.data.total_rentals ?? 0;
+        const totalRevenue = result.data.total_revenue ?? 0;
 
-        const result = await response.json();
-        console.log('API result (rentals):', result);
-
-        if (result.success) {
-            const statusStats = result.data.status_breakdown;
-            const monthlyRevenue = result.data.monthly_revenue;
-
-            const totalRentals = statusStats.reduce((sum, s) => sum + s.total_count, 0);
-            const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.total_revenue, 0);
-
-            const statsObject = {
-                totalRentals: totalRentals,
-                totalRevenue: totalRevenue
-            };
-
-            updateDashboardStats(statsObject);
-        }
-        else {
-            throw new Error(result.message || 'Lỗi khi tải thống kê đơn thuê');
-        }
-    } catch (error) {
-        console.error('Error loading rental stats:', error);
-        showNotification('Lỗi khi tải thống kê đơn thuê: ' + error.message, 'error');
+        return {
+            totalRentals,
+            totalRevenue
+        };
+    } else {
+        throw new Error(result.message || 'Lỗi khi tải thống kê đơn thuê');
     }
 }
+
 
 
 async function loadDashboardData() {
@@ -302,6 +565,7 @@ async function loadDashboardData() {
     updateDashboardStats(statsObject);
     showLoading(false);
 }
+
 
 // Khai báo biến phân trang ở đầu file (chỉ cần khai báo 1 lần)
 let currentPage = 1;
@@ -574,6 +838,11 @@ let currentGamePage = 1;
 let gameLimit = 10;
 
 async function loadGamesData(page = 1) {
+    if(!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
     currentGamePage = page;
     console.log(`Loading games data... Trang: ${currentGamePage}`);
     showLoading(true);
@@ -609,7 +878,7 @@ async function loadGamesData(page = 1) {
             displayGameTable(data.data.consoles);
 
             // Cập nhật hiển thị số trang nếu cần
-            const pageDisplay = document.getElementById('currentGamePageDisplay');
+            const pageDisplay = document.getElementById('currentPageDisplayGame');
             if (pageDisplay) {
                 pageDisplay.textContent = `Trang ${currentGamePage}`;
             }
@@ -691,6 +960,11 @@ let currentRentalPage = 1;
 let rentalLimit = 10;
 
 async function loadRentalsData(page = 1) {
+    if(!localStorage.getItem('token')) {
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = 'login.php';
+        return;
+    }
     currentRentalPage = page;
     console.log(`Loading rentals data... Trang: ${currentRentalPage}`);
     showLoading(true);
@@ -854,6 +1128,7 @@ function showNotification(message, type = 'info') {
     }
 }
 
+
 /**
  * Hiển thị/ẩn loading
  * @param {boolean} show - true để hiển thị, false để ẩn
@@ -937,4 +1212,16 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+
+function logout() {
+    // Xóa token hoặc thông tin đăng nhập
+    localStorage.removeItem('token');
+    alert('Bạn đã đăng xuất thành công.');
+
+    // Chuyển hướng về trang đăng nhập
+    window.location.href = 'login.php'; // hoặc đường dẫn đăng nhập của bạn
+
+    return;
 }

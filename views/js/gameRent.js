@@ -462,7 +462,7 @@ async function loadInfoUser() {
     if (!userId) return;
 
     try {
-        const data = await apiCall(`/users/${userId}`);
+        const data = await apiCall(`/game_rental_system/users/${userId}`);
 
         if (data.success) {
             const user = data.data;
@@ -488,7 +488,7 @@ const profileActions = {
         if (!userId) return;
         
         try {
-            const data = await apiCall(`/users/${userId}`);
+            const data = await apiCall(`/game_rental_system/users/${userId}`);
             if (data.success) {
                 const user = data.data;
                 createModal(`

@@ -28,7 +28,6 @@ require_once __DIR__ . '/services/UserService.php';
 require_once __DIR__ . '/models/User.php';
 require_once __DIR__ . '/models/Game.php';
 require_once __DIR__ . '/controllers/RentalController.php';
-require_once __DIR__ . '/controllers/RentalHistoryController.php';
 require_once __DIR__ . '/core/JWTAuth.php';
 require_once __DIR__ . '/core/Database.php';
 
@@ -36,7 +35,6 @@ use controllers\AuthController;
 use controllers\UserController;
 use controllers\GameController;
 use controllers\RentalController;
-use controllers\RentalHistoryController;
 
 try {
     // Database connection
@@ -130,16 +128,22 @@ try {
             $controller = new GameController($database);
             $controller->index();
             break;
+
                     
         case (( $path === '/gameConsoles/create') && $method === 'POST'):
             $controller = new GameController($database);
             $controller->create();
             break;
+        // Thêm mới console
+        case ($path === '/gameConsoles' && $method === 'POST'):
+            $controller = new GameController($database);
+            $controller->create();
+            break;
 
+        // GET/PUT/DELETE console theo id
         case (preg_match('/^\/gameConsoles\/(\d+)$/', $path, $matches) === 1):
             $consoleId = $matches[1];
             $controller = new GameController($database);
-                        
             switch ($method) {
                 case 'GET':
                     $controller->show($consoleId);
@@ -147,13 +151,22 @@ try {
                 case 'PUT':
                     $controller->update($consoleId);
                     break;
+                case 'POST':
+                    if (isset($_POST['_method']) && $_POST['_method'] === 'PUT') {
+                        $controller->update($consoleId);
+                    } else {
+                        sendErrorResponse(405, "Method not allowed");
+                    }
+                    break;
                 case 'DELETE':
                     $controller->delete($consoleId);
                     break;
                 default:
                     sendErrorResponse(405, "Method not allowed");
             }
-            break;
+
+
+
 
         case ($path === '/gameConsoles/stats' && $method === 'GET'):
             $controller = new GameController($database);
@@ -188,11 +201,6 @@ try {
             $controller->updateStatus($matches[1]);
             break;
 
-        case ($path === '/rentals/upcoming' && $method === 'GET'):
-            $controller = new RentalController($database);
-            $controller->upcoming();
-            break;
-
         // Route: GET /rentals/stats/status
         case ($path === '/rentals/stats/status' && $method === 'GET'):
             $controller = new RentalController($database);
@@ -204,23 +212,6 @@ try {
             $controller = new RentalController($database);
             $controller->getMonthlyRevenue();
             break;
-
-        // Rental History Routes
-        case ($path === '/rental-history' && $method === 'GET'):
-            $controller = new RentalHistoryController($database);
-            $controller->index();
-            break;
-
-        case ($path === '/rental-history/recent' && $method === 'GET'):
-            $controller = new RentalHistoryController($database);
-            $controller->recentActivity();
-            break;
-
-        case (preg_match('/^\/rental-history\/(\d+)$/', $path, $matches) && $method === 'GET'):
-            $controller = new RentalHistoryController($database);
-            $controller->showByRentalId($matches[1]);
-            break;
-
                  
         
         

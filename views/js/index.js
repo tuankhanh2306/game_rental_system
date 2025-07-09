@@ -146,7 +146,7 @@ const showGameDetailModal = (game) => {
     createModal(modalHtml);
     
     document.querySelector('.rent-now-btn')?.addEventListener('click', () => {
-        showNotification('Tính năng thuê game đang được phát triển!', 'info');
+        window.location.href = 'gameConsole.php';
     });
 };
 
@@ -207,7 +207,7 @@ const loadInfoUser = async () => {
     if (!userId) return;
     
     try {
-        const data = await apiCall(`/users/${userId}`);
+        const data = await apiCall(`/game_rental_system/users/${userId}`);
         if (data.success) {
             const user = data.data;
             storage.set('fullname', user.full_name);
@@ -230,7 +230,7 @@ const profileActions = {
         if (!userId) return;
         
         try {
-            const data = await apiCall(`/users/${userId}`);
+            const data = await apiCall(`/game_rental_system/users/${userId}`);
             if (data.success) {
                 const user = data.data;
                 createModal(`

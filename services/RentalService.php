@@ -5,6 +5,7 @@ use models\User;
 use models\Game;
 use models\RentalHistory;
 use Exception;
+use PDO;
 use services\AuthenticationService;
 class RentalService
 {
@@ -12,6 +13,7 @@ class RentalService
     private $gameModel;
     private $db;
     private $authService;
+    private $paymentModel;
 
     public function __construct($database = null)
     {
@@ -19,10 +21,10 @@ class RentalService
         $this->rentalModel = new Rental($database);
         $this->gameModel = new Game($database);
         $this->authService = new AuthenticationService($database);
+        $this->paymentModel = new \models\Payment($database);
     }
 
-    //tạo đơn thuê mới
-    public function createRental($data, $authHeader)
+    public function createPaymentWithRentals($data, $authHeader)
     {
         try {
             // Xác thực token
@@ -34,60 +36,142 @@ class RentalService
             $currentUser = $authResult['user'];
             $currentUserId = $currentUser['user_id'];
 
-            // Validate dữ liệu cơ bản
-            if (empty($data['console_id']) || empty($data['rental_start']) || empty($data['rental_end'])) {
-                return ['success' => false, 'message' => 'Thiếu thông tin đơn thuê'];
+            // Validate danh sách rentals
+            if (empty($data['items']) || !is_array($data['items'])) {
+                return ['success' => false, 'message' => 'Danh sách đơn thuê không hợp lệ'];
             }
 
-            // Tính số giờ thuê
-            $start = new \DateTime($data['rental_start']);
-            $end = new \DateTime($data['rental_end']);
-            $diff = $start->diff($end);
+            $paymentMethod = $data['payment_method'] ?? 'COD';
+            $totalPaymentAmount = 0;
+            $rentalsToInsert = [];
 
-            $total_hours = max(1, ($diff->days * 24) + $diff->h + round($diff->i / 60));
+            // Bắt đầu transaction
+            $this->db->beginTransaction();
 
-            // Lấy giá thuê mỗi giờ
-            $stmt = $this->db->prepare("SELECT rental_price_per_hour FROM game_consoles WHERE console_id = :console_id");
-            $stmt->execute([':console_id' => $data['console_id']]);
-            $price_per_hour = $stmt->fetchColumn();
+            foreach ($data['items'] as $item) {
+                if (
+                    empty($item['console_id']) ||
+                    empty($item['rental_start']) ||
+                    empty($item['rental_end']) ||
+                    empty($item['quantity'])
+                ) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Thiếu thông tin trong một đơn thuê'];
+                }
 
-            if (!$price_per_hour) {
-                return ['success' => false, 'message' => 'Không tìm thấy giá thuê cho console'];
+                $start = new \DateTime($item['rental_start']);
+                $end = new \DateTime($item['rental_end']);
+                $diff = $start->diff($end);
+                $total_hours = max(1, ($diff->days * 24) + $diff->h + round($diff->i / 60));
+
+                // Lấy giá + số lượng máy còn trống
+                $stmt = $this->db->prepare("
+                    SELECT rental_price_per_hour, available_quantity 
+                    FROM game_consoles 
+                    WHERE console_id = :console_id
+                    FOR UPDATE
+                ");
+                $stmt->execute([':console_id' => $item['console_id']]);
+                $console = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$console) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Không tìm thấy console ID: ' . $item['console_id']];
+                }
+
+                if ($console['available_quantity'] < $item['quantity']) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Số lượng máy không đủ cho console ID: ' . $item['console_id']];
+                }
+
+                $total_amount = $total_hours * $console['rental_price_per_hour'] * $item['quantity'];
+                $totalPaymentAmount += $total_amount;
+
+                $rentalsToInsert[] = [
+                    'console_id'   => $item['console_id'],
+                    'rental_start' => $item['rental_start'],
+                    'rental_end'   => $item['rental_end'],
+                    'total_hours'  => $total_hours,
+                    'total_amount' => $total_amount,
+                    'quantity'     => $item['quantity'],
+                    'notes'        => $item['notes'] ?? ''
+                ];
             }
 
-            // Tính tổng tiền
-            $total_amount = $total_hours * $price_per_hour;
+            // Tạo payment
+            $paymentId = $this->paymentModel->create([
+                'user_id'        => $currentUserId,
+                'total_amount'   => $totalPaymentAmount,
+                'payment_method' => $paymentMethod,
+                'payment_status' => 'pending'
+            ]);
 
-            // Chuẩn bị dữ liệu lưu
-            $dataToSave = [
-                'user_id'       => $currentUserId,
-                'console_id'    => $data['console_id'],
-                'rental_start'  => $data['rental_start'],
-                'rental_end'    => $data['rental_end'],
-                'total_hours'   => $total_hours,
-                'total_amount'  => $total_amount,
-                'status'        => $data['status'] ?? 'pending',
-                'notes'         => $data['notes'] ?? ''
-            ];
+            if (!$paymentId) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Không thể tạo thanh toán'];
+            }
 
-            // Gọi model để insert
-            $rentalId = $this->rentalModel->create($dataToSave);
+            $createdRentals = [];
 
-            return $rentalId
-                ? [
-                    'success' => true,
-                    'data' => [
-                        'rental_id'    => $rentalId,
-                        'total_hours'  => $total_hours,
-                        'total_amount' => $total_amount
-                    ]
+            foreach ($rentalsToInsert as $rentalData) {
+                $rentalId = $this->rentalModel->create([
+                    'user_id'      => $currentUserId,
+                    'console_id'   => $rentalData['console_id'],
+                    'rental_start' => $rentalData['rental_start'],
+                    'rental_end'   => $rentalData['rental_end'],
+                    'total_hours'  => $rentalData['total_hours'],
+                    'total_amount' => $rentalData['total_amount'],
+                    'quantity'     => $rentalData['quantity'],
+                    'status'       => 'pending',
+                    'notes'        => $rentalData['notes'],
+                    'payment_id'   => $paymentId
+                ]);
+
+                if (!$rentalId) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Không thể tạo một đơn thuê'];
+                }
+
+                // Trừ số lượng máy còn trống (available_quantity)
+                $updateStmt = $this->db->prepare("
+                    UPDATE game_consoles 
+                    SET available_quantity = available_quantity - :qty 
+                    WHERE console_id = :id
+                ");
+                $updateStmt->execute([
+                    ':qty' => $rentalData['quantity'],
+                    ':id'  => $rentalData['console_id']
+                ]);
+
+                $createdRentals[] = [
+                    'rental_id'    => $rentalId,
+                    'console_id'   => $rentalData['console_id'],
+                    'quantity'     => $rentalData['quantity'],
+                    'total_hours'  => $rentalData['total_hours'],
+                    'total_amount' => $rentalData['total_amount']
+                ];
+            }
+
+            // Commit transaction
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'data' => [
+                    'payment_id'   => $paymentId,
+                    'total_amount' => $totalPaymentAmount,
+                    'rentals'      => $createdRentals
                 ]
-                : ['success' => false, 'message' => 'Không thể tạo đơn thuê'];
-
+            ];
         } catch (Exception $e) {
+            $this->db->rollBack();
             return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
         }
     }
+
+
+
+
 
 
 
@@ -95,17 +179,17 @@ class RentalService
     public function getAllRentals($filters = [])
     {
         try {
-            // Lấy tham số phân trang từ filters hoặc sử dụng giá trị mặc định
+            // GỌI HÀM CẬP NHẬT CÁC ĐƠN HẾT HẠN
+            $this->updateExpiredRentals();
+
+            // Phân trang
             $page = isset($filters['page']) ? (int)$filters['page'] : 1;
             $limit = isset($filters['limit']) ? (int)$filters['limit'] : 10;
-            
-            // Tính offset
             $offset = ($page - 1) * $limit;
-            
-            // Lấy dữ liệu từ model
+
             $rentals = $this->rentalModel->getList($offset, $limit, $filters);
             $total = $this->rentalModel->getTotalCount($filters);
-            
+
             return [
                 'success' => true,
                 'message' => 'Lấy danh sách đơn thuê thành công',
@@ -124,6 +208,7 @@ class RentalService
             ];
         }
     }
+
 
 
     //validate dữ liệu đơn thuê
@@ -450,7 +535,20 @@ class RentalService
             $success = $this->rentalModel->updateStatus($id, $status, $notes);
 
             if ($success) {
-                // Cập nhật trạng thái console
+                // Nếu trạng thái mới là completed hoặc cancelled => cộng lại số lượng máy
+                if (in_array($status, ['completed', 'cancelled'])) {
+                    $stmt = $this->db->prepare("
+                        UPDATE game_consoles
+                        SET available_quantity = LEAST(quantity, available_quantity + :qty)
+                        WHERE console_id = :console_id
+                    ");
+                    $stmt->execute([
+                        ':qty' => $rental['quantity'],
+                        ':console_id' => $rental['console_id']
+                    ]);
+                }
+
+                // Cập nhật trạng thái console dựa vào đơn thuê
                 $this->updateConsoleStatusBasedOnRental($rental['console_id'], $status);
 
                 // Ghi lịch sử nếu có model RentalHistory
@@ -465,6 +563,7 @@ class RentalService
                     ]);
                 }
             }
+
 
             return [
                 'success' => $success,
@@ -486,11 +585,11 @@ class RentalService
         try {
             $statusStats = $this->rentalModel->getStatusStats();
             $year = date('Y');
-            $monthlyRevenue = $this->rentalModel->getMonthlyRevenue($year);
+            $totalRevenue = $this->rentalModel->getTotalRevenue();
 
             $totalRentals = 0;
             foreach ($statusStats as $status) {
-                $totalRentals += $status['total_count'];
+                $totalRentals += $status['count'];
             }
 
             return [
@@ -498,7 +597,7 @@ class RentalService
                 'data' => [
                     'total_rentals' => $totalRentals,
                     'status_breakdown' => $statusStats,
-                    'monthly_revenue' => $monthlyRevenue
+                    'total_revenue' => $totalRevenue
                 ],
                 'message' => 'Thống kê đơn thuê đã được lấy thành công.'
             ];
@@ -528,6 +627,25 @@ class RentalService
             ];
         }
     }
+
+
+    public function getTotalRevenue(){
+        try {
+            $totalRevenue = $this->rentalModel->getTotalRevenue();
+            return [
+                'success' => true,
+                'data' => $totalRevenue,
+                'message' => 'Lấy tổng doanh thu thành công'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Lỗi khi lấy tổng doanh thu: ' . $e->getMessage()
+            ];
+        }
+    }
+
+
 
     /**
      * Lấy doanh thu theo tháng

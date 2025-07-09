@@ -15,36 +15,52 @@ class Rental
 
     // Tạo đơn thuê mới
     public function create($data)
-        {
-            $sql = "INSERT INTO {$this->table} (user_id, console_id, rental_start, rental_end, total_hours, total_amount, status, notes) 
-                    VALUES (:user_id, :console_id, :rental_start, :rental_end, :total_hours, :total_amount, :status, :notes)";
-            
-            $stmt = $this->db->prepare($sql);
+    {
+        $sql = "INSERT INTO {$this->table} (
+                    user_id, 
+                    console_id, 
+                    rental_start, 
+                    rental_end, 
+                    total_hours, 
+                    total_amount, 
+                    quantity,
+                    status, 
+                    notes,
+                    payment_id
+                ) VALUES (
+                    :user_id, 
+                    :console_id, 
+                    :rental_start, 
+                    :rental_end, 
+                    :total_hours, 
+                    :total_amount, 
+                    :quantity,
+                    :status, 
+                    :notes,
+                    :payment_id
+                )";
 
-             // Tách giá trị ra biến
-            $user_id = $data['user_id'];
-            $console_id = $data['console_id'];
-            $rental_start = $data['rental_start'];
-            $rental_end = $data['rental_end'];
-            $total_hours = $data['total_hours'];
-            $total_amount = $data['total_amount'];
-            $status = $data['status'] ?? 'pending';
-            $notes = $data['notes'] ?? '';
+        $stmt = $this->db->prepare($sql);
 
-            $stmt->bindParam(':user_id', $user_id);
-            $stmt->bindParam(':console_id', $console_id);
-            $stmt->bindParam(':rental_start', $rental_start);
-            $stmt->bindParam(':rental_end', $rental_end);
-            $stmt->bindParam(':total_hours', $total_hours);
-            $stmt->bindParam(':total_amount', $total_amount);
-            $stmt->bindParam(':status', $status);
-            $stmt->bindParam(':notes', $notes);
+        $stmt->bindValue(':user_id',      $data['user_id']);
+        $stmt->bindValue(':console_id',   $data['console_id']);
+        $stmt->bindValue(':rental_start', $data['rental_start']);
+        $stmt->bindValue(':rental_end',   $data['rental_end']);
+        $stmt->bindValue(':total_hours',  $data['total_hours']);
+        $stmt->bindValue(':total_amount', $data['total_amount']);
+        $stmt->bindValue(':quantity',     $data['quantity']);
+        $stmt->bindValue(':status',       $data['status'] ?? 'pending');
+        $stmt->bindValue(':notes',        $data['notes'] ?? '');
+        $stmt->bindValue(':payment_id',   $data['payment_id'], PDO::PARAM_INT);
 
-            if ($stmt->execute()) {
-                return $this->db->lastInsertId();
-            }
-            return false;
+        if ($stmt->execute()) {
+            return $this->db->lastInsertId();
         }
+        return false;
+    }
+
+
+
 
     // Tìm đơn thuê theo ID
     public function findById($id)
@@ -97,6 +113,7 @@ class Rental
     // Lấy tất cả đơn thuê (admin)
     public function getList($offset = 0, $limit = 10, $filters = [])
     {
+        $this->updateExpiredRentals();
         $whereClause = "WHERE 1=1";
         $params = [];
         
@@ -235,13 +252,38 @@ class Rental
     // Cập nhật trạng thái đơn thuê
     public function updateStatus($id, $status, $notes = '')
     {
-        $sql = "UPDATE {$this->table} SET status = :status, notes = :notes, updated_at = NOW() WHERE rental_id = :id";
+        // Lấy thông tin đơn thuê hiện tại
+        $rental = $this->findById($id);
+        if (!$rental) {
+            return false;
+        }
+
+        // Cập nhật trạng thái đơn thuê
+        $sql = "UPDATE {$this->table} 
+                SET status = :status, notes = :notes, updated_at = NOW() 
+                WHERE rental_id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':notes', $notes);
-        return $stmt->execute();
+        $success = $stmt->execute();
+
+        if ($success) {
+            // Nếu trạng thái mới là completed hoặc cancelled thì cộng lại số lượng máy
+            if (in_array($status, ['completed', 'cancelled'])) {
+                $sqlUpdateConsole = "UPDATE game_consoles
+                                    SET available_quantity = LEAST(quantity, available_quantity + :qty)
+                                    WHERE console_id = :console_id";
+                $stmt2 = $this->db->prepare($sqlUpdateConsole);
+                $stmt2->bindValue(':qty', $rental['quantity'], PDO::PARAM_INT);
+                $stmt2->bindValue(':console_id', $rental['console_id'], PDO::PARAM_INT);
+                $stmt2->execute();
+            }
+        }
+
+        return $success;
     }
+
 
     // Kiểm tra xung đột thời gian thuê
     public function checkTimeConflict($consoleId, $startTime, $endTime, $excludeRentalId = null)
@@ -291,7 +333,7 @@ class Rental
     // Lấy thống kê đơn thuê theo trạng thái
     public function getStatusStats()
     {
-        $sql = "SELECT status, COUNT(*) as total_count FROM rentals GROUP BY status";
+        $sql = "SELECT status, COUNT(*) as count FROM {$this->table} GROUP BY status";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -348,18 +390,67 @@ class Rental
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Tự động cập nhật trạng thái đơn thuê hết hạn
-    public function updateExpiredRentals()
+    public function getTotalRevenue()
     {
-        $sql = "UPDATE {$this->table} 
-                SET status = 'completed', updated_at = NOW()
-                WHERE status = 'active' 
-                AND rental_end < NOW()";
-        
+        $sql = "SELECT SUM(total_amount) AS total_revenue FROM {$this->table} WHERE status = 'completed'";
+        $stmt = $this->db->query($sql);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return (float)($row['total_revenue'] ?? 0);
+    }
+
+
+    // Tự động cập nhật trạng thái đơn thuê hết hạn
+   public function updateExpiredRentals()
+    {
+        echo "Hàm updateExpiredRentals() đã chạy<br>";
+
+        $sql = "SELECT rental_id, console_id, quantity 
+                FROM {$this->table} 
+                WHERE status = 'pending' AND rental_end < NOW()";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
-        return $stmt->rowCount(); // Trả về số dòng được cập nhật
+        $expiredRentals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo "Số bản ghi hết hạn: " . count($expiredRentals) . "<br>";
+
+        if (empty($expiredRentals)) {
+            return 0;
+        }
+
+        foreach ($expiredRentals as $rental) {
+            echo "Cập nhật rental_id: " . $rental['rental_id'] . "<br>";
+
+            // Update rental
+            $updateRentalSql = "UPDATE {$this->table}
+                                SET status = 'completed', updated_at = NOW()
+                                WHERE rental_id = :rental_id";
+            $updateStmt = $this->db->prepare($updateRentalSql);
+            $updateStmt->bindParam(':rental_id', $rental['rental_id']);
+            $updateStmt->execute();
+
+            // Update console
+            $updateConsoleSql = "
+                UPDATE game_consoles
+                SET available_quantity = 
+                    CASE 
+                        WHEN available_quantity + :quantity > quantity THEN quantity
+                        ELSE available_quantity + :quantity
+                    END
+                WHERE console_id = :console_id
+            ";
+            $consoleStmt = $this->db->prepare($updateConsoleSql);
+            $consoleStmt->bindParam(':quantity', $rental['quantity'], PDO::PARAM_INT);
+            $consoleStmt->bindParam(':console_id', $rental['console_id'], PDO::PARAM_INT);
+            $consoleStmt->execute();
+        }
+
+        return count($expiredRentals);
     }
+
+
+
+
+
 
     // Xóa đơn thuê
     public function delete($id)

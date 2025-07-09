@@ -50,18 +50,15 @@ class GameController{
 
     
     // Tạo máy chơi game mới
-    public function create(){
+    public function create() {
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 $this->sendResponse(405, false, 'Method không được hỗ trợ');
                 return;
             }
 
-            $data = json_decode(file_get_contents('php://input'), true);
-            if (empty($data)) {
-                $this->sendResponse(400, false, 'Dữ liệu không hợp lệ');
-                return;
-            }
+            // Lấy data từ $_POST
+            $data = $_POST;
 
             // Kiểm tra các trường bắt buộc
             $requiredFields = ['console_name', 'console_type', 'rental_price_per_hour'];
@@ -72,17 +69,41 @@ class GameController{
                 }
             }
 
+            // Xử lý file upload nếu có
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $imageName = uniqid() . '_' . basename($_FILES['image']['name']);
+                $uploadDir = __DIR__ . '/../views/img/';
+                $uploadPath = $uploadDir . $imageName;
+
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                    // Đây là đường dẫn lưu trong CSDL
+                    $data['image_url'] = '../../views/img/' . $imageName;
+                } else {
+                    throw new Exception('Upload file thất bại');
+                }
+            }
+
+            // Nếu không có ảnh, có thể set image_url = null hoặc không set
+
             $result = $this->gameService->createGame($data);
+
             if ($result['success']) {
                 $this->sendResponse(201, true, $result['message'], ['console_id' => $result['data']]);
             } else {
-                $statusCode = isset($result['errors']) ? 400 : 500; 
-                $this->sendResponse($statusCode, false, $result['message'], isset($result['errors']) ? ['errors' => $result['errors']] : null);
+                $statusCode = isset($result['errors']) ? 400 : 500;
+                $this->sendResponse(
+                    $statusCode,
+                    false,
+                    $result['message'],
+                    isset($result['errors']) ? ['errors' => $result['errors']] : null
+                );
             }
         } catch (Exception $e) {
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
     }
+
+
 
     // Lấy chi tiết máy chơi game
     public function show($id){
@@ -107,12 +128,29 @@ class GameController{
     // Cập nhật máy chơi game
     public function update($id){
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+            // Nhận FormData POST nhưng cần _method=PUT để phân biệt
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['_method'] ?? '') !== 'PUT') {
                 $this->sendResponse(405, false, 'Method không được hỗ trợ');
                 return;
             }
 
-            $data = json_decode(file_get_contents('php://input'), true);
+            $data = $_POST;
+
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '../../views/img/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                $fileName = uniqid() . '_' . basename($_FILES['image']['name']);
+                $targetFile = $uploadDir . $fileName;
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
+                    $data['image_url'] = '../img/' . $fileName;
+                } else {
+                    $this->sendResponse(500, false, 'Không thể lưu file ảnh');
+                    return;
+                }
+            }
+
             if (empty($data)) {
                 $this->sendResponse(400, false, 'Dữ liệu không hợp lệ');
                 return;
@@ -129,6 +167,8 @@ class GameController{
             $this->sendResponse(500, false, 'Lỗi hệ thống: ' . $e->getMessage());
         }
     }
+
+
 
     // Xóa máy chơi game
     public function delete($id){

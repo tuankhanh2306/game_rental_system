@@ -763,13 +763,17 @@ footer {
   border: none;
   border-radius: 16px;
   width: 380px;
-  max-height: 500px;
-  overflow: hidden;
+  /* Bỏ max-height cố định nếu muốn tự giãn */
+  /* max-height: 500px; */
+  overflow: visible; /* Cho dropdown theo nội dung */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: none;
   animation: slideIn 0.3s ease;
+  flex-direction: column; /* Nếu dùng flex */
 }
+
+
 
 @keyframes slideIn {
   from { 
@@ -1085,55 +1089,102 @@ footer {
   }
 }
 
-/* Modal Overlay */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(3px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
 }
 
+/* Modal content box */
 .modal-content {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  position: relative;
-  animation: modalFadeIn 0.4s ease;
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    position: relative;
+    animation: fadeInScale 0.3s ease;
 }
 
+/* Fade in + scale animation */
+@keyframes fadeInScale {
+    from {opacity: 0; transform: scale(0.9);}
+    to {opacity: 1; transform: scale(1);}
+}
+
+/* Modal title */
+.modal-content h3 {
+    margin-top: 0;
+    font-size: 20px;
+    color: #333;
+    text-align: center;
+}
+
+/* Modal form */
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Input fields */
+.modal-content input[type="number"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin: 8px 0 15px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+}
+
+.modal-content input[type="number"]:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Submit button */
+.modal-content button[type="submit"] {
+    padding: 12px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-content button[type="submit"]:hover {
+    background: #218838;
+}
+
+/* Close button (×) */
 .modal-close {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 28px;
-  cursor: pointer;
-  color: #999;
-  transition: color 0.3s ease;
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    font-size: 22px;
+    cursor: pointer;
+    color: #aaa;
+    transition: color 0.2s;
 }
 
 .modal-close:hover {
-  color: #333;
+    color: #333;
 }
 
-@keyframes modalFadeIn {
-  from { 
-    opacity: 0; 
-    transform: scale(0.9) translateY(-20px);
-  }
-  to { 
-    opacity: 1; 
-    transform: scale(1) translateY(0);
-  }
+/* Labels */
+.modal-content label {
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #555;
 }
 
 /* Responsive Design */

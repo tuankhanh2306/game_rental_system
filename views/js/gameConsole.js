@@ -103,10 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
             profileActions.changePassword();
         });
     }
-
+    fetchGameConsoles();
     loadCartFromStorage();
     updateCartDisplay();
-    fetchGameConsoles();
+    
 });
 
 // Profile functions
@@ -115,7 +115,7 @@ async function loadInfoUser() {
     if (!userId) return;
 
     try {
-        const data = await apiCall(`/users/${userId}`);
+        const data = await apiCall(`/game_rental_system/users/${userId}`);
 
         if (data.success) {
             const user = data.data;
@@ -139,7 +139,7 @@ const profileActions = {
         if (!userId) return;
         
         try {
-            const data = await apiCall(`/users/${userId}`);
+            const data = await apiCall(`/game_rental_system/users/${userId}`);
             if (data.success) {
                 const user = data.data;
                 createModal(`
@@ -246,12 +246,12 @@ function addToCart(consoleId, consoleName, price, imageUrl, hours, quantity) {
     }
 
     const cartItem = {
-        id: parseInt(consoleId),
+        id: numericConsoleId,
         name: consoleName,
         price: parseFloat(price),
         image: imageUrl || '../img/default.png',
-        quantity: 1,        // mặc định 1
-        hours: 1            // mặc định 1
+        quantity: quantity ?? 1,   // DÙNG quantity nhận từ tham số
+        hours: hours ?? 1          // DÙNG hours nhận từ tham số
     };
 
     cart.push(cartItem);
@@ -260,6 +260,7 @@ function addToCart(consoleId, consoleName, price, imageUrl, hours, quantity) {
     updateButtonState(numericConsoleId, true);
     showNotification('Đã thêm vào giỏ hàng!', 'success');
 }
+
 
 
 function removeFromCart(consoleId) {
@@ -452,13 +453,19 @@ document.addEventListener('click', (e) => {
 });
 
 // Game consoles display
+let currentGamePage = 1; // Khởi tạo trang đầu tiên
+
 async function fetchGameConsoles() {
     const gameContainer = document.getElementById("game-container");
-    
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page') || currentGamePage;
+
     try {
-        const result = await apiCall('/game_rental_system/gameConsoles/index');
-        
+        const result = await apiCall(`/game_rental_system/gameConsoles/index?page=${page}&limit=6`);
+
         if (result.success) {
+            currentGamePage = parseInt(page);
             displayGameConsoles(result.data);
         } else {
             gameContainer.innerHTML = `<div class="error">Lỗi: ${result.message}</div>`;
@@ -468,6 +475,7 @@ async function fetchGameConsoles() {
         gameContainer.innerHTML = '<div class="error">Không thể tải dữ liệu. Vui lòng thử lại sau.</div>';
     }
 }
+
 
 function displayGameConsoles(data) {
     const gameContainer = document.getElementById("game-container");
@@ -558,7 +566,7 @@ function displayGameConsoles(data) {
 
 
 //model số giờ và số lượng
-function showAddToCartModal(consoleId, consoleName, price, imageUrl, availableQuantity) {
+function showAddToCartModal(consoleId, consoleName, price, imageUrl, availableQuantity, redirectAfterAdd = false) {
     createModal(`
         <h3>Thuê máy "${escapeHtml(consoleName)}"</h3>
         <form id="addToCartForm">
@@ -566,7 +574,7 @@ function showAddToCartModal(consoleId, consoleName, price, imageUrl, availableQu
             <input type="number" name="hours" min="1" value="1" required style="width:100%;margin:5px 0;">
             <label>Số lượng máy:</label>
             <input type="number" name="quantity" min="1" max="${availableQuantity}" value="1" required style="width:100%;margin:5px 0;">
-            <button type="submit" style="margin-top:10px;padding:10px 20px;background:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;">Xác nhận thêm giỏ hàng</button>
+            <button type="submit" style="margin-top:10px;padding:10px 20px;background:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;">Xác nhận thuê</button>
         </form>
     `);
 
@@ -588,8 +596,14 @@ function showAddToCartModal(consoleId, consoleName, price, imageUrl, availableQu
 
         addToCart(consoleId, consoleName, price, imageUrl, hours, quantity);
         document.querySelector('.modal-overlay').remove();
+
+        // ✅ Chuyển sang trang thanh toán nếu cần
+        if (redirectAfterAdd) {
+            window.location.href = 'gameRent.php';
+        }
     };
 }
+
 
 
 function attachCartQuantityHourListeners() {
@@ -662,29 +676,39 @@ function getStatusText(status) {
 }
 
 function displayPagination(pagination) {
-    const gameContainer = document.getElementById("game-container");
-    
-    let paginationHtml = '<div class="pagination">';
-    
-    if (pagination.current_page > 1) {
-        paginationHtml += `<button onclick="loadPage(${pagination.current_page - 1})">« Trước</button>`;
+    const paginationHtml = document.createElement('div');
+    paginationHtml.className = 'pagination';
+
+    const totalPages = pagination.total_pages;
+    const currentPage = pagination.current_page;
+
+    if (currentPage > 1) {
+        paginationHtml.innerHTML += `<button onclick="goToPage(${currentPage - 1})">« Trước</button>`;
     }
-    
-    for (let i = 1; i <= pagination.total_pages; i++) {
-        if (i === pagination.current_page) {
-            paginationHtml += `<button class="active">${i}</button>`;
-        } else {
-            paginationHtml += `<button onclick="loadPage(${i})">${i}</button>`;
-        }
+
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHtml.innerHTML += `
+            <button 
+                onclick="goToPage(${i})"
+                class="${i === currentPage ? 'active' : ''}">
+                ${i}
+            </button>`;
     }
-    
-    if (pagination.current_page < pagination.total_pages) {
-        paginationHtml += `<button onclick="loadPage(${pagination.current_page + 1})">Sau »</button>`;
+
+    if (currentPage < totalPages) {
+        paginationHtml.innerHTML += `<button onclick="goToPage(${currentPage + 1})">Sau »</button>`;
     }
-    
-    paginationHtml += '</div>';
-    gameContainer.innerHTML += paginationHtml;
+
+    const container = document.getElementById("game-container");
+    container.appendChild(paginationHtml);
 }
+function goToPage(page) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.history.pushState({}, '', url.toString());
+    fetchGameConsoles();
+}
+
 
 function loadPage(page) {
     const gameContainer = document.getElementById("game-container");
@@ -717,12 +741,19 @@ function updateAuthMenu() {
 
 function rentConsole(consoleId) {
     const token = storage.get('token');
-    
     if (!token) {
         alert('Vui lòng đăng nhập để thuê máy chơi game.');
         window.location.href = 'login.php';
         return;
     }
-    
-    window.location.href = `gameRent.php?console_id=${consoleId}`;
+
+    // Tìm thông tin console theo ID
+    const consoleElement = document.getElementById(`console-${consoleId}`);
+    const name = consoleElement.querySelector('h3 a')?.textContent || 'Máy';
+    const price = consoleElement.querySelector('.price')?.textContent?.replace(/\D/g, '') || 0;
+    const image = consoleElement.querySelector('img')?.getAttribute('src') || '../img/default.png';
+    const quantity = parseInt(consoleElement.querySelector('.status').innerText.match(/Số lượng\s*:\s*(\d+)/)?.[1] || 1);
+
+    showAddToCartModal(consoleId, name.trim(), price, image, quantity);
+
 }

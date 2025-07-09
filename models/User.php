@@ -153,7 +153,7 @@ class User
             $params[] = $searchParam;
         }
 
-        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $sql .= " ORDER BY user_id ASC LIMIT ? OFFSET ?";
         $params[] = (int)$limit;
         $params[] = (int)$offset;
 
