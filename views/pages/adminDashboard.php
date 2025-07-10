@@ -222,6 +222,7 @@
                                 <th>Người thuê</th>
                                 <th>Thời gian bắt đầu</th>
                                 <th>Thời gian kết thúc</th>
+                                <th>Số lượng</th>
                                 <th>Tổng giờ</th>
                                 <th>Tổng tiền</th>
                                 <th>Trạng thái</th>
@@ -231,8 +232,9 @@
                             <!-- Dữ liệu sẽ được đổ vào đây -->
                         </tbody>
                     </table>
-                    <p id="currentRentalPageDisplay">Trang 1</p>
-
+                    <button id="prevPageBtnRental" class="btn btn-secondary">Trang trước</button>
+                    <span id="currentPageDisplayRental">Trang 1</span>
+                    <button id="nextPageBtnRental" class="btn btn-secondary">Trang sau</button>
                 </div>
             </div>
 

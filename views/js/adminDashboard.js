@@ -46,6 +46,16 @@ document.getElementById('prevPageBtnGame').addEventListener('click', () => {
         loadGamesData(currentGamePage - 1);
     }
 });
+//rental
+document.getElementById('nextPageBtnRental').addEventListener('click', () => {
+    loadRentalsData(currentRentalPage + 1);
+});
+document.getElementById('prevPageBtnRental').addEventListener('click', () => {
+    if (currentRentalPage > 1) {
+        loadRentalsData(currentRentalPage - 1);
+    }
+});
+
 
 
 
@@ -983,18 +993,21 @@ async function loadRentalsData(page = 1) {
                 'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             }
         });
-
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Lấy toàn bộ text trả về
         const result = await response.json();
+
+
 
         if (result.success) {
             displayRentalTable(result.data.rentals);
 
             // Cập nhật trang hiện tại
-            const pageDisplay = document.getElementById('currentRentalPageDisplay');
+            const pageDisplay = document.getElementById('currentPageDisplayRental');
             if (pageDisplay) {
                 pageDisplay.textContent = `Trang ${currentRentalPage}`;
             }
@@ -1040,6 +1053,7 @@ function displayRentalTable(rentals) {
             <td>${escapeHtml(rental.full_name || 'N/A')}</td>
             <td>${formatDate(rental.rental_start)}</td>
             <td>${formatDate(rental.rental_end)}</td>
+            <td>${rental.quantity}</td>
             <td>${rental.total_hours} giờ</td>
             <td>${formatCurrency(rental.total_amount)}</td>
             <td>${rental.status}</td>

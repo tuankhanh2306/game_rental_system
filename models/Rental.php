@@ -161,6 +161,7 @@ class Rental
     // Lấy tất cả đơn thuê (admin)
     public function getAll($page = 1, $limit = 10, $search = '', $status = '')
     {
+        $this->updateExpiredRentals();
         $offset = ($page - 1) * $limit;
         $filters = [
             'search' => $search,
@@ -399,53 +400,52 @@ class Rental
     }
 
 
-    // Tự động cập nhật trạng thái đơn thuê hết hạn
-   public function updateExpiredRentals()
-    {
-        echo "Hàm updateExpiredRentals() đã chạy<br>";
 
+
+    // Tự động cập nhật trạng thái đơn thuê hết hạn
+    public function updateExpiredRentals()
+    {
+        // Lấy các đơn hết hạn
         $sql = "SELECT rental_id, console_id, quantity 
                 FROM {$this->table} 
-                WHERE status = 'pending' AND rental_end < NOW()";
+                WHERE status IN ('pending', 'confirmed', 'active') 
+                AND rental_end < NOW()";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $expiredRentals = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo "Số bản ghi hết hạn: " . count($expiredRentals) . "<br>";
 
         if (empty($expiredRentals)) {
             return 0;
         }
 
         foreach ($expiredRentals as $rental) {
-            echo "Cập nhật rental_id: " . $rental['rental_id'] . "<br>";
+            $rentalId = $rental['rental_id'];
+            $consoleId = $rental['console_id'];
+            $quantity = $rental['quantity'];
 
-            // Update rental
+            // Cập nhật trạng thái đơn thuê thành completed
             $updateRentalSql = "UPDATE {$this->table}
                                 SET status = 'completed', updated_at = NOW()
                                 WHERE rental_id = :rental_id";
             $updateStmt = $this->db->prepare($updateRentalSql);
-            $updateStmt->bindParam(':rental_id', $rental['rental_id']);
+            $updateStmt->bindParam(':rental_id', $rentalId, PDO::PARAM_INT);
             $updateStmt->execute();
 
-            // Update console
+            // Cộng lại số lượng máy thuê
             $updateConsoleSql = "
                 UPDATE game_consoles
-                SET available_quantity = 
-                    CASE 
-                        WHEN available_quantity + :quantity > quantity THEN quantity
-                        ELSE available_quantity + :quantity
-                    END
+                SET available_quantity = LEAST(quantity, available_quantity + :quantity)
                 WHERE console_id = :console_id
             ";
             $consoleStmt = $this->db->prepare($updateConsoleSql);
-            $consoleStmt->bindParam(':quantity', $rental['quantity'], PDO::PARAM_INT);
-            $consoleStmt->bindParam(':console_id', $rental['console_id'], PDO::PARAM_INT);
+            $consoleStmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
+            $consoleStmt->bindParam(':console_id', $consoleId, PDO::PARAM_INT);
             $consoleStmt->execute();
         }
 
         return count($expiredRentals);
     }
+
 
 
 
